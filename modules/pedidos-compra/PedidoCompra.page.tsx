@@ -1,0 +1,171 @@
+
+import React, { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { PedidosCompraService } from './pedidos-compra.service';
+import { IPedidoCompra, IPedidoFiltros } from './pedidos-compra.types';
+import PedidosList from './components/PedidosList';
+import PedidosFilters from './components/PedidosFilters';
+import PedidosKpis from './components/PedidosKpis';
+import { CorretoresService } from '../cadastros/corretores/corretores.service';
+import { ICorretor } from '../cadastros/corretores/corretores.types';
+import { SociosService } from '../ajustes/socios/socios.service';
+import { ISocio } from '../ajustes/socios/socios.types';
+
+
+
+
+const PedidoCompraPage: React.FC = () => {
+  const navigate = useNavigate();
+
+  // Data States
+  const [pedidos, setPedidos] = useState<IPedidoCompra[]>([]);
+  const [statsPedidos, setStatsPedidos] = useState<IPedidoCompra[]>([]);
+  const [corretores, setCorretores] = useState<ICorretor[]>([]);
+  const [socios, setSocios] = useState<ISocio[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+  const ITEMS_PER_PAGE = 9;
+
+  // Filters
+  const [activeTab, setActiveTab] = useState<'EFETIVADOS' | 'RASCUNHO' | 'TODOS'>('EFETIVADOS');
+  const [filtros, setFiltros] = useState<IPedidoFiltros>({
+    busca: '',
+    dataInicio: '',
+    dataFim: '',
+    corretorId: '',
+    socioId: ''
+  });
+
+  const loadData = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true);
+    try {
+      const response = await PedidosCompraService.getAll({
+        ...filtros,
+        page: currentPage,
+        limit: ITEMS_PER_PAGE
+      }, activeTab);
+
+      setPedidos(response.data);
+      setTotalPages(response.totalPages);
+      setTotalCount(response.count);
+
+      // Carregar Stats (sem paginação)
+      const stats = await PedidosCompraService.getDashboardStats(filtros, activeTab);
+      setStatsPedidos(stats);
+
+    } catch (e) {
+      console.error(e);
+    } finally {
+      if (!silent) setLoading(false);
+    }
+  }, [activeTab, filtros, currentPage]);
+
+  useEffect(() => {
+    // Busca dependências dos filtros
+    Promise.all([
+      CorretoresService.getAll(),
+      SociosService.getAll()
+    ]).then(([c, s]) => {
+      setCorretores(c);
+      setSocios(s);
+    });
+  }, []);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  // Reset pagination when filters change (ignoring currentPage itself)
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeTab, filtros]);
+
+  const handlePageChange = (page: number) => {
+    if (page >= 1 && page <= totalPages) {
+      setCurrentPage(page);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
+  return (
+    <div className="space-y-6 animate-in fade-in duration-500 pb-20">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-slate-900 tracking-tighter">Pedidos de Compra</h1>
+          <p className="text-slate-500 mt-1 uppercase text-[10px] font-black tracking-widest">Gestão de aquisições de frota</p>
+        </div>
+        <button
+          onClick={() => navigate('/pedidos-compra/novo')}
+          className="px-6 py-3 bg-indigo-600 text-white rounded-xl text-sm font-black uppercase tracking-widest hover:bg-indigo-700 transition-all shadow-lg active:scale-95 flex items-center"
+        >
+          <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" /></svg>
+          Novo Pedido
+        </button>
+      </div>
+
+      <PedidosKpis pedidos={statsPedidos} />
+
+      <div className="flex bg-slate-100 p-1 rounded-2xl w-fit">
+        {(['EFETIVADOS', 'RASCUNHO', 'TODOS'] as const).map(tab => (
+          <button
+            key={tab}
+            onClick={() => setActiveTab(tab)}
+            className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === tab ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+          >
+            {tab === 'EFETIVADOS' ? 'Efetivados' : tab === 'RASCUNHO' ? 'Rascunhos' : 'Ver Todos'}
+          </button>
+        ))}
+      </div>
+
+      <PedidosFilters
+        filtros={filtros}
+        corretores={corretores}
+        socios={socios}
+        onChange={setFiltros}
+      />
+
+      <PedidosList pedidos={pedidos} loading={loading} onEdit={(p) => navigate(`/pedidos-compra/${p.id}`)} />
+
+      {/* Pagination */}
+      {!loading && totalPages > 1 && (
+        <div className="flex items-center justify-between mt-8 pt-6 border-t border-slate-100">
+          <p className="text-xs text-slate-400 font-bold uppercase tracking-wider">
+            Página <span className="text-slate-900">{currentPage}</span> de <span className="text-slate-900">{totalPages}</span>
+            <span className="ml-2 opacity-50">({totalCount} pedidos)</span>
+          </p>
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={() => handlePageChange(currentPage - 1)}
+              disabled={currentPage === 1}
+              className="p-3 rounded-2xl hover:bg-slate-50 text-slate-400 hover:text-indigo-600 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+            >
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
+
+            <button className="w-10 h-10 rounded-xl text-xs font-black bg-indigo-600 text-white shadow-lg shadow-indigo-200 scale-110 transition-all">
+              {currentPage}
+            </button>
+
+            <button
+              onClick={() => handlePageChange(currentPage + 1)}
+              disabled={currentPage === totalPages}
+              className="p-3 rounded-2xl hover:bg-slate-50 text-slate-400 hover:text-indigo-600 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+            >
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default PedidoCompraPage;
