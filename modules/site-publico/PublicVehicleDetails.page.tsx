@@ -211,7 +211,7 @@ const PublicVehicleDetailsPage: React.FC = () => {
                     <button
                       key={foto.id}
                       onClick={() => { setActivePhoto(foto.url); setActivePhotoIndex(index); }}
-                      className={`relative min-w-[80px] h-[60px] rounded-xl overflow-hidden border-2 transition-all snap-start shrink-0 ${activePhoto === foto.url ? 'border-[#004691] shadow-lg scale-105 z-10' : 'border-white opacity-40 hover:opacity-100'
+                      className={`relative w-24 h-[60px] rounded-xl overflow-hidden border-2 transition-all snap-start shrink-0 ${activePhoto === foto.url ? 'border-[#004691] shadow-lg scale-105 z-10' : 'border-white opacity-40 hover:opacity-100'
                         }`}
                     >
                       <img src={foto.url} className="w-full h-full object-cover" alt={`Thumb ${index}`} loading="lazy" decoding="async" />
