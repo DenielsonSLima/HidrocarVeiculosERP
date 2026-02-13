@@ -11,6 +11,7 @@ import AboutUs from './components/AboutUs';
 import PublicContact from './components/PublicContact';
 import PublicFooter from './components/PublicFooter';
 import LazyMap from './components/LazyMap';
+import PublicHomeSkeleton from './components/PublicHomeSkeleton';
 
 const SitePublicoPage: React.FC = () => {
   const [data, setData] = useState<IPublicPageData | null>(null);
@@ -40,10 +41,7 @@ const SitePublicoPage: React.FC = () => {
         <PublicHero />
 
         {loading ? (
-          <div className="py-20 flex flex-col items-center justify-center space-y-4">
-            <div className="w-8 h-8 border-2 border-[#004691] border-t-transparent rounded-full animate-spin"></div>
-            <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">Sincronizando Vitrine...</p>
-          </div>
+          <PublicHomeSkeleton />
         ) : (
           <>
             {/* Vitrine de Marcas */}
@@ -82,7 +80,7 @@ const SitePublicoPage: React.FC = () => {
 
       {/* Rodapé */}
       <PublicFooter empresa={data?.empresa || {} as any} />
-    </div>
+    </div >
   );
 };
 
