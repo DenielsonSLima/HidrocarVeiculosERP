@@ -1,5 +1,4 @@
 import React from 'react';
-import StoreFront from '../../../src/assets/153705.jpg';
 
 const AboutUs: React.FC = () => {
   return (
@@ -32,7 +31,7 @@ const AboutUs: React.FC = () => {
           <div className="relative w-full h-full min-h-[450px]">
             <div className="w-full h-full rounded-[2rem] overflow-hidden shadow-2xl ring-4 ring-slate-50">
               {/* Imagem Institucional (Fachada) */}
-              <img src={StoreFront} className="w-full h-full object-cover" alt="Fachada Hidrocar Veículos" />
+              <img src="https://images.unsplash.com/photo-1562141961-c5f87ab62146?w=800&h=600&fit=crop" className="w-full h-full object-cover" alt="Fachada Hidrocar Veículos" />
             </div>
           </div>
         </div>

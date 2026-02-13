@@ -1,6 +1,5 @@
 
 import React from 'react';
-import FordRangerLimited from '../../../src/assets/ford_ranger_limited.jpg';
 
 const CompanyBio: React.FC = () => {
   return (
@@ -41,7 +40,7 @@ const CompanyBio: React.FC = () => {
         <div className="relative h-full flex items-center justify-center">
           <div className="w-full aspect-[4/3] lg:aspect-video rounded-[2rem] overflow-hidden shadow-2xl ring-4 ring-slate-50 relative z-10">
             {/* Imagem Institucional (Ford Ranger Limited) */}
-            <img src={FordRangerLimited} className="w-full h-full object-cover" alt="Nova Ford Ranger Limited - HCV Veículos" />
+            <img src="https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?w=800&h=600&fit=crop" className="w-full h-full object-cover" alt="Nova Ford Ranger Limited - HCV Veículos" />
           </div>
           <div className="absolute -bottom-6 -left-6 bg-[#004691] text-white p-8 rounded-[2rem] shadow-2xl max-w-[240px] z-20 animate-bounce-slow">
             <p className="text-3xl font-black mb-1">HCV</p>
