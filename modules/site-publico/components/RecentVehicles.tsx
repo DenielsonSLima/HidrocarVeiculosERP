@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { IVeiculo } from '../../estoque/estoque.types';
 import PublicVehicleCard from './PublicVehicleCard';
 
@@ -15,9 +16,9 @@ const RecentVehicles: React.FC<Props> = ({ veiculos }) => {
             <p className="text-[#004691] text-[10px] font-black uppercase tracking-[0.5em] mb-2">Disponibilidade Imediata</p>
             <h2 className="text-5xl font-[900] text-slate-900 uppercase tracking-tighter leading-none">Recém Chegados</h2>
           </div>
-          <button className="px-8 py-4 bg-white border border-slate-200 text-slate-900 rounded-2xl text-[11px] font-black uppercase tracking-widest hover:border-[#004691] hover:text-[#004691] transition-all shadow-sm active:scale-95">
+          <Link to="/estoque-publico" className="px-8 py-4 bg-white border border-slate-200 text-slate-900 rounded-2xl text-[11px] font-black uppercase tracking-widest hover:border-[#004691] hover:text-[#004691] transition-all shadow-sm active:scale-95">
             Ver Pátio Completo
-          </button>
+          </Link>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">

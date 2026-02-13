@@ -1,5 +1,6 @@
 import { supabase } from '../../lib/supabase';
-import { ITitulo, ITransacao, ICategoriaFinanceira, IFinanceiroKpis, IExtratoFiltros, IExtratoResponse, IExtratoTotals } from './financeiro.types';
+import { ITitulo, ITransacao, ICategoriaFinanceira, IFinanceiroKpis, IExtratoFiltros, IExtratoResponse, IExtratoTotals, IPendencias } from './financeiro.types';
+import { IContaBancaria } from '../ajustes/contas-bancarias/contas.types';
 
 export const FinanceiroService = {
   async getTitulos(filtros: { tipo?: 'PAGAR' | 'RECEBER', status?: string }): Promise<ITitulo[]> {
@@ -194,6 +195,49 @@ export const FinanceiroService = {
     const { data, error } = await supabase.from('fin_categorias').select('id, nome, tipo, natureza').order('nome');
     if (error) throw error;
     return data as ICategoriaFinanceira[];
+  },
+
+  async getContasBancarias(): Promise<IContaBancaria[]> {
+    const { data, error } = await supabase
+      .from('fin_contas_bancarias')
+      .select('*')
+      .eq('ativo', true)
+      .order('banco_nome');
+    if (error) throw error;
+    return data as IContaBancaria[];
+  },
+
+  async getPendencias(): Promise<IPendencias> {
+    const hoje = new Date().toISOString().split('T')[0];
+
+    // Atrasados (Pagar)
+    const { data: atrasados } = await supabase
+      .from('fin_titulos')
+      .select('valor_total, valor_pago')
+      .eq('tipo', 'PAGAR')
+      .lt('data_vencimento', hoje)
+      .neq('status', 'PAGO')
+      .neq('status', 'CANCELADO');
+
+    // Vencendo Hoje (Pagar)
+    const { data: hojePagar } = await supabase
+      .from('fin_titulos')
+      .select('valor_total, valor_pago')
+      .eq('tipo', 'PAGAR')
+      .eq('data_vencimento', hoje)
+      .neq('status', 'PAGO')
+      .neq('status', 'CANCELADO');
+
+    const totalAtrasado = (atrasados || []).reduce((acc, t) => acc + (t.valor_total - (t.valor_pago || 0)), 0);
+    const countAtrasado = (atrasados || []).length;
+
+    const totalHoje = (hojePagar || []).reduce((acc, t) => acc + (t.valor_total - (t.valor_pago || 0)), 0);
+    const countHoje = (hojePagar || []).length;
+
+    return {
+      atrasado: { total: totalAtrasado, count: countAtrasado },
+      hoje: { total: totalHoje, count: countHoje }
+    };
   },
 
   subscribe(onUpdate: () => void) {

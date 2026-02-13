@@ -4,6 +4,8 @@ import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Layout from './components/Layout';
 import { AuthService } from './modules/auth/auth.service';
 import { supabase } from './lib/supabase';
+import ScrollToTop from './components/ScrollToTop';
+
 
 // Public Module
 import SitePublicoPage from './modules/site-publico/SitePublico.page';
@@ -109,7 +111,9 @@ const App: React.FC = () => {
   }
 
   return (
+
     <HashRouter>
+      <ScrollToTop />
       <Routes>
         {/* Rota Raiz: Site Público */}
         <Route path="/" element={<SitePublicoPage />} />

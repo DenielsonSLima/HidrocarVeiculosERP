@@ -19,7 +19,7 @@ const SitePublicoPage: React.FC = () => {
   useEffect(() => {
     async function load() {
       try {
-        const res = await SitePublicoService.getPublicData();
+        const res = await SitePublicoService.getHomePageData();
         setData(res);
       } catch (err) {
         console.error("Erro ao carregar site público:", err);
@@ -70,11 +70,11 @@ const SitePublicoPage: React.FC = () => {
           {/* Container do Mapa: Borda a Borda em Modo Satélite Real */}
           <div className="w-full h-[350px] bg-slate-100 relative group overflow-hidden border-y border-slate-100">
             <LazyMap
-              src="https://www.google.com/maps?q=-10.9255147,-37.0583626&z=17&t=k&output=embed"
-              title="Localização HCV Experience"
+              src="https://www.google.com/maps?q=-10.9155494,-37.0575372&z=17&t=k&output=embed"
+              title="Localização Hidrocar Veículos"
             />
             <div className="absolute bottom-6 right-6 pointer-events-none bg-white/90 backdrop-blur px-4 py-2 rounded-xl border border-slate-200 shadow-xl opacity-0 group-hover:opacity-100 transition-opacity z-10">
-              <span className="text-[9px] font-black uppercase tracking-widest text-[#004691]">HCV Experience Center - Matriz</span>
+              <span className="text-[9px] font-black uppercase tracking-widest text-[#004691]">Hidrocar Veículos</span>
             </div>
           </div>
         </section>

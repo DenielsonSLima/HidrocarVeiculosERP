@@ -14,3 +14,22 @@ export interface IPublicPageData {
   veiculos: IVeiculo[];
   montadoras: IMontadoraPublic[];
 }
+
+export interface IGetStockParams {
+  page: number;
+  pageSize: number;
+  brand?: string;
+  minPrice?: number;
+  maxPrice?: number;
+  search?: string;
+  sort?: 'nome' | 'preco_asc' | 'preco_desc';
+  includeMontadoras?: boolean;
+}
+
+export interface IPaginatedStock {
+  veiculos: IVeiculo[];
+  total: number;
+  page: number;
+  pageSize: number;
+  montadoras?: IMontadoraPublic[];
+}

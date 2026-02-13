@@ -13,15 +13,15 @@ const PublicVehicleCard: React.FC<Props> = ({ veiculo, cores = [] }) => {
   const navigate = useNavigate();
   const [activePhotoIndex, setActivePhotoIndex] = useState(0);
   const v = veiculo as any;
-  
+
   const fotos = veiculo.fotos || [];
   const hasPhotos = fotos.length > 0;
   const currentPhoto = hasPhotos ? fotos[activePhotoIndex] : null;
 
-  const formatCurrency = (val: number) => new Intl.NumberFormat('pt-BR', { 
-    style: 'currency', 
+  const formatCurrency = (val: number) => new Intl.NumberFormat('pt-BR', {
+    style: 'currency',
     currency: 'BRL',
-    maximumFractionDigits: 0 
+    maximumFractionDigits: 0
   }).format(val);
 
   const handleNext = (e: React.MouseEvent) => {
@@ -40,7 +40,7 @@ const PublicVehicleCard: React.FC<Props> = ({ veiculo, cores = [] }) => {
   };
 
   return (
-    <div 
+    <div
       onClick={handleClick}
       className="group bg-white border border-slate-200 rounded-[2.5rem] overflow-hidden hover:shadow-[0_30px_60px_-15px_rgba(0,0,0,0.1)] hover:border-[#004691] transition-all duration-500 cursor-pointer flex flex-col h-full animate-in fade-in"
     >
@@ -48,7 +48,7 @@ const PublicVehicleCard: React.FC<Props> = ({ veiculo, cores = [] }) => {
       <div className="aspect-[16/10] bg-slate-900 relative overflow-hidden shrink-0">
         {hasPhotos ? (
           <>
-            <img src={currentPhoto?.url} className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110" alt="Veículo" />
+            <img src={currentPhoto?.url} className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110" alt="Veículo" loading="lazy" decoding="async" />
             {fotos.length > 1 && (
               <div className="absolute inset-0 flex items-center justify-between px-4 opacity-0 group-hover:opacity-100 transition-opacity z-10">
                 <button onClick={handlePrev} className="p-2 rounded-full bg-black/40 backdrop-blur-md text-white hover:bg-[#004691] transition-all">
@@ -62,63 +62,71 @@ const PublicVehicleCard: React.FC<Props> = ({ veiculo, cores = [] }) => {
           </>
         ) : (
           <div className="w-full h-full flex flex-col items-center justify-center text-slate-700 bg-slate-100">
-             <svg className="w-12 h-12 mb-3 opacity-20" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+            <svg className="w-12 h-12 mb-3 opacity-20" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
           </div>
         )}
-        
+
         <div className="absolute top-4 left-4 z-10 flex flex-col gap-2">
-           <div className="bg-[#004691] text-white px-4 py-1.5 rounded-full text-[8px] font-black shadow-xl border border-white/20 uppercase tracking-[0.2em]">
-              Seleção HCV
-           </div>
-           {veiculo.km < 10000 && (
-             <div className="bg-emerald-500 text-white px-3 py-1 rounded-full text-[8px] font-black shadow-xl uppercase tracking-widest animate-pulse w-fit">
-               Baixa KM
-             </div>
-           )}
+          <div className="bg-[#004691] text-white px-4 py-1.5 rounded-full text-[8px] font-black shadow-xl border border-white/20 uppercase tracking-[0.2em]">
+            Seleção HCV
+          </div>
+          {veiculo.km < 10000 && (
+            <div className="bg-emerald-500 text-white px-3 py-1 rounded-full text-[8px] font-black shadow-xl uppercase tracking-widest animate-pulse w-fit">
+              Baixa KM
+            </div>
+          )}
         </div>
       </div>
 
       {/* 2. Conteúdo Info */}
       <div className="p-7 flex flex-col flex-1">
         <div className="mb-6 min-w-0">
-          <div className="flex items-center gap-2 mb-2">
-            {v.montadora?.logo_url && <img src={v.montadora.logo_url} className="h-4 w-auto object-contain opacity-60" alt="" />}
-            <p className="text-[10px] font-black text-[#004691] uppercase tracking-[0.3em] truncate">{v.montadora?.nome}</p>
+          <div className="flex items-center gap-2 mb-2 h-6">
+            {v.montadora?.logo_url ? (
+              <img src={v.montadora.logo_url} className="h-6 w-auto object-contain opacity-80" alt="" />
+            ) : (
+              <p className="text-[10px] font-black text-[#004691] uppercase tracking-[0.3em] truncate">{v.montadora?.nome}</p>
+            )}
           </div>
-          <h3 className="text-2xl font-[900] text-slate-900 uppercase tracking-tighter truncate leading-none mb-1 group-hover:text-[#004691] transition-colors">{v.modelo?.nome}</h3>
-          <p className="text-xs font-medium text-slate-400 uppercase truncate tracking-tight">{v.versao?.nome}</p>
-        </div>
+          <h3 className="text-xl font-[900] text-slate-900 uppercase tracking-tighter truncate leading-tight mb-2 group-hover:text-[#004691] transition-colors">
+            {v.modelo?.nome} <span className="font-medium text-slate-400 ml-1">{v.versao?.nome}</span>
+          </h3>
 
-        {/* Ficha Técnica Reestruturada */}
-        <div className="grid grid-cols-2 gap-3 mb-8">
-           <div className="bg-slate-50/50 p-3 rounded-2xl border border-slate-100 flex flex-col">
-              <span className="text-[8px] font-black text-slate-400 uppercase mb-1 tracking-widest">Ano</span>
-              <span className="text-xs font-black text-slate-800">{veiculo.ano_fabricacao}/{veiculo.ano_modelo}</span>
-           </div>
-           <div className="bg-slate-50/50 p-3 rounded-2xl border border-slate-100 flex flex-col">
-              <span className="text-[8px] font-black text-slate-400 uppercase mb-1 tracking-widest">Uso</span>
-              <span className="text-xs font-black text-slate-800">{veiculo.km.toLocaleString('pt-BR')} <small className="text-[8px]">KM</small></span>
-           </div>
-           <div className="bg-slate-50/50 p-3 rounded-2xl border border-slate-100 flex flex-col">
-              <span className="text-[8px] font-black text-slate-400 uppercase mb-1 tracking-widest">Motor</span>
-              <span className="text-xs font-black text-slate-800 truncate">{veiculo.motorizacao}</span>
-           </div>
-           <div className="bg-slate-50/50 p-3 rounded-2xl border border-slate-100 flex flex-col">
-              <span className="text-[8px] font-black text-slate-400 uppercase mb-1 tracking-widest">Câmbio</span>
-              <span className="text-xs font-black text-slate-800 truncate">{veiculo.transmissao}</span>
-           </div>
+          <div className="grid grid-cols-2 gap-y-1 gap-x-4 text-[10px] font-semibold text-slate-500 uppercase tracking-wide border-t border-slate-100 pt-3 mt-1">
+            <div className="flex items-center gap-1.5 overflow-hidden">
+              <svg className="w-3 h-3 text-[#004691] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+              <span className="truncate">{v.motorizacao}</span>
+            </div>
+            <div className="flex items-center gap-1.5 overflow-hidden">
+              <svg className="w-3 h-3 text-[#004691] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path d="M19.428 15.428a2 2 0 00-1.022-.547l-2.384-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" /></svg>
+              <span className="truncate">{v.combustivel}</span>
+            </div>
+            <div className="flex items-center gap-1.5 overflow-hidden">
+              <svg className="w-3 h-3 text-[#004691] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" /></svg>
+              <span className="truncate">{v.transmissao}</span>
+            </div>
+            <div className="flex items-center gap-1.5 overflow-hidden">
+              <svg className="w-3 h-3 text-[#004691] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+              <span>{v.ano_fabricacao}/{v.ano_modelo}</span>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-1.5 mt-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+            <svg className="w-3 h-3 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+            <span>{veiculo.km.toLocaleString('pt-BR')} KM</span>
+          </div>
         </div>
 
         {/* 3. Preço e Ação Final */}
         <div className="mt-auto pt-6 border-t border-slate-100 flex items-end justify-between">
-           <div>
-             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Investimento Premium</p>
-             <p className="text-3xl font-[900] text-slate-900 tracking-tighter leading-none group-hover:text-emerald-600 transition-colors">{formatCurrency(veiculo.valor_venda)}</p>
-           </div>
-           
-           <div className="w-14 h-14 bg-slate-900 text-white rounded-[1.5rem] flex items-center justify-center shadow-xl group-hover:bg-[#004691] group-hover:scale-110 transition-all active:scale-95">
-             <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path d="M17 8l4 4m0 0l-4 4m4-4H3" /></svg>
-           </div>
+          <div>
+            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-0.5">Valor</p>
+            <p className="text-3xl font-[900] text-[#004691] tracking-tighter leading-none">{formatCurrency(veiculo.valor_venda)}</p>
+          </div>
+
+          <div className="w-14 h-14 bg-slate-900 text-white rounded-[1.5rem] flex items-center justify-center shadow-xl group-hover:bg-[#004691] group-hover:scale-110 transition-all active:scale-95">
+            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path d="M17 8l4 4m0 0l-4 4m4-4H3" /></svg>
+          </div>
         </div>
       </div>
     </div>

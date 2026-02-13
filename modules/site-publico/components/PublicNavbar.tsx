@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { IEmpresa } from '../../ajustes/empresa/empresa.types';
 
 interface Props {
@@ -9,6 +9,7 @@ interface Props {
 
 const PublicNavbar: React.FC<Props> = ({ empresa }) => {
   const navigate = useNavigate();
+  const location = useLocation();
 
   const handleScroll = (e: React.MouseEvent<HTMLAnchorElement>, id: string) => {
     e.preventDefault();
@@ -44,8 +45,15 @@ const PublicNavbar: React.FC<Props> = ({ empresa }) => {
     <nav className="fixed top-0 left-0 w-full z-[120] bg-[#001d3d] shadow-2xl transition-colors duration-500">
       <div className="max-w-7xl mx-auto px-6 h-24 flex items-center justify-between">
         {/* Logo à Esquerda */}
-        <Link
-          to="/"
+        <div
+          onClick={(e) => {
+            e.preventDefault();
+            if (location.pathname === '/') {
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            } else {
+              navigate('/');
+            }
+          }}
           className="flex items-center space-x-4 cursor-pointer group"
         >
           <div className="bg-white p-2 rounded-xl transform group-hover:rotate-6 transition-transform shadow-lg">
@@ -54,14 +62,23 @@ const PublicNavbar: React.FC<Props> = ({ empresa }) => {
           <span className="text-2xl font-[900] tracking-tighter uppercase text-white">
             Hidrocar<span className="bg-gradient-to-r from-red-600 to-red-900 bg-clip-text text-transparent">VEÍCULOS</span>
           </span>
-        </Link>
+        </div>
 
         {/* Menu Centralizado */}
         <div className="hidden lg:flex items-center space-x-10">
-          <Link to="/estoque-publico" className="font-['Outfit'] text-sm font-bold uppercase tracking-widest text-blue-50 hover:text-white transition-all relative group">
+          <div
+            onClick={() => {
+              if (location.pathname === '/estoque-publico') {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              } else {
+                navigate('/estoque-publico');
+              }
+            }}
+            className="font-['Outfit'] text-sm font-bold uppercase tracking-widest text-blue-50 hover:text-white transition-all relative group cursor-pointer"
+          >
             Estoque
             <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-white transition-all group-hover:w-full"></span>
-          </Link>
+          </div>
           <a href="#" onClick={(e) => handleScroll(e, 'sobre')} className="font-['Outfit'] text-sm font-bold uppercase tracking-widest text-blue-50 hover:text-white transition-all relative group">
             Quem Somos
             <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-white transition-all group-hover:w-full"></span>

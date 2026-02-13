@@ -22,6 +22,7 @@ export const PedidosCompraService = {
           valor_custo,
           placa,
           fotos,
+          socios,
           montadora:cad_montadoras(nome, logo_url),
           modelo:cad_modelos(nome),
           versao:cad_versoes(nome)

@@ -21,6 +21,11 @@ export interface IFinanceiroKpis {
   balanco_projetado: number;
 }
 
+export interface IPendencias {
+  atrasado: { total: number; count: number };
+  hoje: { total: number; count: number };
+}
+
 export interface ITitulo {
   id: string;
   parceiro_id?: string;
@@ -75,4 +80,10 @@ export interface IExtratoResponse {
   count: number;
   currentPage: number;
   totalPages: number;
+}
+
+export interface IExtratoTotals {
+  entradas: number;
+  saidas: number;
+  balanco: number;
 }

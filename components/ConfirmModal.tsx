@@ -1,5 +1,6 @@
 
 import React from 'react';
+import ReactDOM from 'react-dom';
 
 interface ConfirmModalProps {
   isOpen: boolean;
@@ -24,19 +25,30 @@ const ConfirmModal: React.FC<ConfirmModalProps> = ({
   variant = 'danger',
   isLoading = false
 }) => {
+  // Lock body scroll when modal is open
+  React.useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
-  return (
-    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300">
-      <div 
+  const content = (
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300">
+      <div
         className="bg-white w-full max-w-md rounded-[2rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 border border-slate-100"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="p-8 text-center">
           {/* Ícone */}
-          <div className={`w-16 h-16 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-sm ${
-            variant === 'danger' ? 'bg-rose-50 text-rose-500' : 'bg-indigo-50 text-indigo-500'
-          }`}>
+          <div className={`w-16 h-16 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-sm ${variant === 'danger' ? 'bg-rose-50 text-rose-500' : 'bg-indigo-50 text-indigo-500'
+            }`}>
             {variant === 'danger' ? (
               <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -51,7 +63,7 @@ const ConfirmModal: React.FC<ConfirmModalProps> = ({
           <h3 className="text-xl font-black text-slate-900 uppercase tracking-tighter mb-2">
             {title}
           </h3>
-          
+
           <p className="text-sm text-slate-500 font-medium leading-relaxed px-4">
             {message}
           </p>
@@ -68,11 +80,10 @@ const ConfirmModal: React.FC<ConfirmModalProps> = ({
           <button
             onClick={onConfirm}
             disabled={isLoading}
-            className={`flex-1 py-3.5 text-white rounded-2xl text-xs font-black uppercase tracking-widest shadow-lg transition-all flex items-center justify-center disabled:opacity-50 ${
-              variant === 'danger' 
-                ? 'bg-rose-600 hover:bg-rose-700 shadow-rose-200' 
-                : 'bg-indigo-600 hover:bg-indigo-700 shadow-indigo-200'
-            }`}
+            className={`flex-1 py-3.5 text-white rounded-2xl text-xs font-black uppercase tracking-widest shadow-lg transition-all flex items-center justify-center disabled:opacity-50 ${variant === 'danger'
+              ? 'bg-rose-600 hover:bg-rose-700 shadow-rose-200'
+              : 'bg-indigo-600 hover:bg-indigo-700 shadow-indigo-200'
+              }`}
           >
             {isLoading ? (
               <svg className="animate-spin h-4 w-4 text-white" viewBox="0 0 24 24">
@@ -87,6 +98,8 @@ const ConfirmModal: React.FC<ConfirmModalProps> = ({
       </div>
     </div>
   );
+
+  return ReactDOM.createPortal(content, document.body);
 };
 
 export default ConfirmModal;
