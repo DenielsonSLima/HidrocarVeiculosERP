@@ -1,77 +1,77 @@
 
 import React, { useEffect, useState } from 'react';
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
-import Layout from './components/Layout';
-import { AuthService } from './modules/auth/auth.service';
-import { supabase } from './lib/supabase';
-import ScrollToTop from './components/ScrollToTop';
+import Layout from './components/Layout.tsx';
+import { AuthService } from './modules/auth/auth.service.ts';
+import { supabase } from './lib/supabase.ts';
+import ScrollToTop from './components/ScrollToTop.tsx';
 
 
 // Public Module
-import SitePublicoPage from './modules/site-publico/SitePublico.page';
-import PublicVehicleDetailsPage from './modules/site-publico/PublicVehicleDetails.page';
-import EstoquePublicoPage from './modules/site-publico/estoque-publico/EstoquePublico.page';
+import SitePublicoPage from './modules/site-publico/SitePublico.page.tsx';
+import PublicVehicleDetailsPage from './modules/site-publico/PublicVehicleDetails.page.tsx';
+import EstoquePublicoPage from './modules/site-publico/estoque-publico/EstoquePublico.page.tsx';
 
 // Auth Module
-import AuthPage from './modules/auth/Auth.page';
+import AuthPage from './modules/auth/Auth.page.tsx';
 
 // Importação das Páginas ERP
-import InicioPage from './modules/inicio/Inicio.page';
-import ParceirosPage from './modules/parceiros/Parceiros.page';
-import CadastrosPage from './modules/cadastros/Cadastros.page';
-import EstoquePage from './modules/estoque/Estoque.page';
-import EstoqueFormPage from './modules/estoque/EstoqueForm.page';
-import EstoqueDetalhesPage from './modules/estoque/EstoqueDetalhes.page';
-import PedidoCompraPage from './modules/pedidos-compra/PedidoCompra.page';
-import PedidoCompraFormPage from './modules/pedidos-compra/PedidoCompraForm.page';
-import PedidoCompraDetalhesPage from './modules/pedidos-compra/PedidoCompraDetalhes.page';
-import PedidoCompraVeiculoDetalhesPage from './modules/pedidos-compra/PedidoCompraVeiculoDetalhes.page';
-import PedidoVendaPage from './modules/pedidos-venda/PedidoVenda.page';
-import VendaFormPage from './modules/pedidos-venda/VendaForm.page';
-import PedidoVendaDetalhesPage from './modules/pedidos-venda/PedidoVendaDetalhes.page';
-import VendaVeiculoDetalhesPage from './modules/pedidos-venda/VendaVeiculoDetalhes.page';
-import CaixaPage from './modules/caixa/Caixa.page';
-import FinanceiroPage from './modules/financeiro/Financeiro.page';
+import InicioPage from './modules/inicio/Inicio.page.tsx';
+import ParceirosPage from './modules/parceiros/Parceiros.page.tsx';
+import CadastrosPage from './modules/cadastros/Cadastros.page.tsx';
+import EstoquePage from './modules/estoque/Estoque.page.tsx';
+import EstoqueFormPage from './modules/estoque/EstoqueForm.page.tsx';
+import EstoqueDetalhesPage from './modules/estoque/EstoqueDetalhes.page.tsx';
+import PedidoCompraPage from './modules/pedidos-compra/PedidoCompra.page.tsx';
+import PedidoCompraFormPage from './modules/pedidos-compra/PedidoCompraForm.page.tsx';
+import PedidoCompraDetalhesPage from './modules/pedidos-compra/PedidoCompraDetalhes.page.tsx';
+import PedidoCompraVeiculoDetalhesPage from './modules/pedidos-compra/PedidoCompraVeiculoDetalhes.page.tsx';
+import PedidoVendaPage from './modules/pedidos-venda/PedidoVenda.page.tsx';
+import VendaFormPage from './modules/pedidos-venda/VendaForm.page.tsx';
+import PedidoVendaDetalhesPage from './modules/pedidos-venda/PedidoVendaDetalhes.page.tsx';
+import VendaVeiculoDetalhesPage from './modules/pedidos-venda/VendaVeiculoDetalhes.page.tsx';
+import CaixaPage from './modules/caixa/Caixa.page.tsx';
+import FinanceiroPage from './modules/financeiro/Financeiro.page.tsx';
 // Corrected import casing to match 'Performance.page.tsx' and resolve casing mismatch error.
-import PerformancePage from './modules/performance/Performance.page';
-import RelatoriosPage from './modules/relatorios/Relatorios.page';
-import EditorSitePage from './modules/editor-site/EditorSite.page';
-import AjustesPage from './modules/ajustes/Ajustes.page';
+import PerformancePage from './modules/performance/Performance.page.tsx';
+import RelatoriosPage from './modules/relatorios/Relatorios.page.tsx';
+import EditorSitePage from './modules/editor-site/EditorSite.page.tsx';
+import AjustesPage from './modules/ajustes/Ajustes.page.tsx';
 
 // Submódulos Relatórios
-import RelatorioVendasPage from './modules/relatorios/pages/RelatorioVendas.page';
-import RelatorioEstoquePage from './modules/relatorios/pages/RelatorioEstoque.page';
-import RelatorioFinanceiroPage from './modules/relatorios/pages/RelatorioFinanceiro.page';
-import RelatorioAuditoriaPage from './modules/relatorios/pages/RelatorioAuditoria.page';
+import RelatorioVendasPage from './modules/relatorios/pages/RelatorioVendas.page.tsx';
+import RelatorioEstoquePage from './modules/relatorios/pages/RelatorioEstoque.page.tsx';
+import RelatorioFinanceiroPage from './modules/relatorios/pages/RelatorioFinanceiro.page.tsx';
+import RelatorioAuditoriaPage from './modules/relatorios/pages/RelatorioAuditoria.page.tsx';
 
 // Submódulos Cadastros
-import CidadesPage from './modules/cadastros/cidades/Cidades.page';
-import MontadorasPage from './modules/cadastros/montadoras/Montadoras.page';
-import TiposVeiculosPage from './modules/cadastros/tipos-veiculos/TiposVeiculos.page';
-import ModelosPage from './modules/cadastros/modelos/Modelos.page';
-import VersoesPage from './modules/cadastros/versoes/Versoes.page';
-import CaracteristicasPage from './modules/cadastros/caracteristicas/Caracteristicas.page';
-import OpcionaisPage from './modules/cadastros/opcionais/Opcionais.page';
-import CoresPage from './modules/cadastros/cores/Cores.page';
-import CondicoesPagamentoPage from './modules/cadastros/condicoes-pagamento/CondicoesPagamento.page';
-import CondicoesRecebimentoPage from './modules/cadastros/condicoes-recebimento/CondicoesRecebimento.page';
-import FormasPagamentoPage from './modules/cadastros/formas-pagamento/FormasPagamento.page';
-import MotorizacaoPage from './modules/cadastros/motorizacao/Motorizacao.page';
-import CombustivelPage from './modules/cadastros/combustivel/Combustivel.page';
-import TransmissaoPage from './modules/cadastros/transmissao/Transmissao.page';
-import CorretoresPage from './modules/cadastros/corretores/Corretores.page';
-import TiposDespesasPage from './modules/cadastros/tipos-despesas/TiposDespesas.page';
+import CidadesPage from './modules/cadastros/cidades/Cidades.page.tsx';
+import MontadorasPage from './modules/cadastros/montadoras/Montadoras.page.tsx';
+import TiposVeiculosPage from './modules/cadastros/tipos-veiculos/TiposVeiculos.page.tsx';
+import ModelosPage from './modules/cadastros/modelos/Modelos.page.tsx';
+import VersoesPage from './modules/cadastros/versoes/Versoes.page.tsx';
+import CaracteristicasPage from './modules/cadastros/caracteristicas/Caracteristicas.page.tsx';
+import OpcionaisPage from './modules/cadastros/opcionais/Opcionais.page.tsx';
+import CoresPage from './modules/cadastros/cores/Cores.page.tsx';
+import CondicoesPagamentoPage from './modules/cadastros/condicoes-pagamento/CondicoesPagamento.page.tsx';
+import CondicoesRecebimentoPage from './modules/cadastros/condicoes-recebimento/CondicoesRecebimento.page.tsx';
+import FormasPagamentoPage from './modules/cadastros/formas-pagamento/FormasPagamento.page.tsx';
+import MotorizacaoPage from './modules/cadastros/motorizacao/Motorizacao.page.tsx';
+import CombustivelPage from './modules/cadastros/combustivel/Combustivel.page.tsx';
+import TransmissaoPage from './modules/cadastros/transmissao/Transmissao.page.tsx';
+import CorretoresPage from './modules/cadastros/corretores/Corretores.page.tsx';
+import TiposDespesasPage from './modules/cadastros/tipos-despesas/TiposDespesas.page.tsx';
 
 // Submódulos Ajustes
-import EmpresaPage from './modules/ajustes/empresa/Empresa.page';
-import MarcaDaguaPage from './modules/ajustes/marca-dagua/MarcaDagua.page';
-import LogsPage from './modules/ajustes/logs/Logs.page';
-import SociosPage from './modules/ajustes/socios/Socios.page';
-import UsuariosPage from './modules/ajustes/usuarios/Usuarios.page';
-import BackupPage from './modules/ajustes/backup/Backup.page';
-import ApiResetPage from './modules/ajustes/api-reset/ApiReset.page';
-import ContasBancariasPage from './modules/ajustes/contas-bancarias/ContasBancarias.page';
-import SaldoInicialPage from './modules/ajustes/saldo-inicial/SaldoInicial.page';
+import EmpresaPage from './modules/ajustes/empresa/Empresa.page.tsx';
+import MarcaDaguaPage from './modules/ajustes/marca-dagua/MarcaDagua.page.tsx';
+import LogsPage from './modules/ajustes/logs/Logs.page.tsx';
+import SociosPage from './modules/ajustes/socios/Socios.page.tsx';
+import UsuariosPage from './modules/ajustes/usuarios/Usuarios.page.tsx';
+import BackupPage from './modules/ajustes/backup/Backup.page.tsx';
+import ApiResetPage from './modules/ajustes/api-reset/ApiReset.page.tsx';
+import ContasBancariasPage from './modules/ajustes/contas-bancarias/ContasBancarias.page.tsx';
+import SaldoInicialPage from './modules/ajustes/saldo-inicial/SaldoInicial.page.tsx';
 
 const App: React.FC = () => {
   const [session, setSession] = useState<any>(null);
