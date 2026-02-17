@@ -95,11 +95,29 @@ export const SitePublicoService = {
     if (minPrice) query = query.gte('valor_venda', minPrice);
     if (maxPrice) query = query.lte('valor_venda', maxPrice);
 
-    // Busca por placa ou modelo (sanitiza caracteres especiais do Postgres LIKE)
+    // Busca por placa, modelo ou montadora
+    // Nota: .or() do PostgREST não suporta colunas de foreign tables (modelo.nome, montadora.nome),
+    // então buscamos primeiro os IDs correspondentes e filtramos pelas FKs diretas.
     if (search) {
       const sanitized = search.replace(/[%_\\]/g, '');
       if (sanitized.length > 0) {
-        query = query.or(`placa.ilike.%${sanitized}%,modelo.nome.ilike.%${sanitized}%,montadora.nome.ilike.%${sanitized}%`);
+        const [modelosResult, montadorasResult] = await Promise.all([
+          supabase.from('cad_modelos').select('id').ilike('nome', `%${sanitized}%`),
+          supabase.from('cad_montadoras').select('id').ilike('nome', `%${sanitized}%`)
+        ]);
+
+        const modeloIds = (modelosResult.data || []).map(m => m.id);
+        const montadoraIds = (montadorasResult.data || []).map(m => m.id);
+
+        const orFilters: string[] = [`placa.ilike.%${sanitized}%`];
+        if (modeloIds.length > 0) {
+          orFilters.push(`modelo_id.in.(${modeloIds.join(',')})`);
+        }
+        if (montadoraIds.length > 0) {
+          orFilters.push(`montadora_id.in.(${montadoraIds.join(',')})`);
+        }
+
+        query = query.or(orFilters.join(','));
       }
     }
 
