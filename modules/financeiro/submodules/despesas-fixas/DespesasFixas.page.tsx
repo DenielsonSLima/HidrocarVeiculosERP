@@ -5,6 +5,7 @@ import { ITituloFixa, FixasTab, IFixasFiltros, GroupByFixa } from './despesas-fi
 import FixasFilters from './components/FixasFilters';
 import FixasList from './components/FixasList';
 import FixasKpis from './components/FixasKpis';
+import DespesaFixaForm from './components/DespesaFixaForm';
 import ModalBaixa from '../components/ModalBaixa';
 import ConfirmModal from '../../../../components/ConfirmModal';
 
@@ -26,6 +27,8 @@ const DespesasFixasPage: React.FC = () => {
   const [selectedTitulo, setSelectedTitulo] = useState<ITituloFixa | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [toast, setToast] = useState<{ type: 'success' | 'error', message: string } | null>(null);
 
   // Sincroniza agrupamento padrão ao mudar de aba
   useEffect(() => {
@@ -77,20 +80,35 @@ const DespesasFixasPage: React.FC = () => {
     try {
       await DespesasFixasService.delete(deleteId);
       setDeleteId(null);
+      setToast({ type: 'success', message: 'Despesa removida com sucesso!' });
       loadData(true);
+    } catch (e) {
+      setToast({ type: 'error', message: 'Erro ao remover lançamento.' });
     } finally {
       setIsDeleting(false);
+      setTimeout(() => setToast(null), 3000);
     }
   };
 
   return (
-    <div className="space-y-8 relative">
+    <div className="space-y-8 animate-in fade-in duration-500 relative">
+      {toast && (
+        <div className={`fixed top-6 right-6 z-[200] px-6 py-4 rounded-2xl shadow-2xl animate-in slide-in-from-right duration-300 border backdrop-blur-md ${
+          toast.type === 'success' ? 'bg-slate-900/95 text-white border-emerald-500/50' : 'bg-rose-600 text-white'
+        }`}>
+          <span className="font-bold text-sm tracking-tight">{toast.message}</span>
+        </div>
+      )}
+
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
           <h2 className="text-3xl font-black text-slate-900 uppercase tracking-tighter leading-none">Despesas Fixas</h2>
           <p className="text-slate-500 text-xs font-bold uppercase tracking-widest mt-2">Custos recorrentes e manutenção estrutural</p>
         </div>
-        <button className="px-8 py-4 bg-slate-900 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-800 transition-all shadow-xl active:scale-95 flex items-center">
+        <button 
+          onClick={() => setIsFormOpen(true)}
+          className="px-8 py-4 bg-slate-900 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-800 transition-all shadow-xl active:scale-95 flex items-center"
+        >
           <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
           </svg>
@@ -128,7 +146,14 @@ const DespesasFixasPage: React.FC = () => {
         <ModalBaixa 
           titulo={selectedTitulo as any} 
           onClose={() => setSelectedTitulo(null)} 
-          onSuccess={() => { setSelectedTitulo(null); loadData(true); }} 
+          onSuccess={() => { setSelectedTitulo(null); loadData(true); setToast({type: 'success', message: 'Baixa realizada com sucesso!'}); }} 
+        />
+      )}
+
+      {isFormOpen && (
+        <DespesaFixaForm 
+          onClose={() => setIsFormOpen(false)} 
+          onSuccess={() => { setIsFormOpen(false); loadData(true); setToast({type: 'success', message: 'Despesa fixa lançada com sucesso!'}); }}
         />
       )}
 

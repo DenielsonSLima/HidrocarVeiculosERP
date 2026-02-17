@@ -1,6 +1,6 @@
 
 import { supabase } from '../../lib/supabase';
-import { ICaixaDashboardData, ISocioStockStats } from './caixa.types';
+import { ICaixaDashboardData, ISocioStockStats, IForecastMes } from './caixa.types';
 import { FinanceiroService } from '../financeiro/financeiro.service';
 
 export const CaixaService = {
@@ -12,9 +12,10 @@ export const CaixaService = {
     // 1. Parallelize all independent database calls
     const [
       { data: contas },
-      { data: veiculosNoPatio },
+      { data: veiculosNoPatioBruto },
       { data: titulosPagar },
       { data: titulosReceber },
+      { data: vendasConcluidas },
     ] = await Promise.all([
       // Saldos Bancários
       supabase.from('fin_contas_bancarias').select('*').order('banco_nome'),
@@ -34,7 +35,18 @@ export const CaixaService = {
         .eq('tipo', 'RECEBER')
         .neq('status', 'PAGO')
         .neq('status', 'CANCELADO'),
+      // Cross-check: buscar veículos que já possuem venda CONCLUÍDA
+      // para garantir que não sejam contados como ativos (safety net)
+      supabase.from('venda_pedidos')
+        .select('veiculo_id')
+        .eq('status', 'CONCLUIDO')
+        .not('veiculo_id', 'is', null),
     ]);
+
+    // Filtrar veículos: excluir qualquer veículo que tenha venda CONCLUÍDA
+    // mesmo que o status do veículo não tenha sido atualizado corretamente
+    const veiculosVendidosIds = new Set((vendasConcluidas || []).map((v: any) => v.veiculo_id));
+    const veiculosNoPatio = (veiculosNoPatioBruto || []).filter((v: any) => !veiculosVendidosIds.has(v.id));
 
     // 2. Parallelize more dependent queries that need periodo
     let queryVendas = supabase.from('venda_pedidos')
@@ -42,7 +54,7 @@ export const CaixaService = {
         valor_venda, 
         status, 
         data_venda,
-        veiculo:est_veiculos(valor_custo, valor_custo_servicos)
+        veiculo:est_veiculos(valor_custo, valor_custo_servicos, socios)
       `)
       .eq('status', 'CONCLUIDO');
 
@@ -120,6 +132,32 @@ export const CaixaService = {
       return acc + (receita - custoVeiculo);
     }, 0);
 
+    // Calcular lucro por sócio a partir das vendas concluídas no período
+    (vendas || []).forEach((v: any) => {
+      const sociosVeiculo = Array.isArray(v.veiculo?.socios) ? v.veiculo.socios : [];
+      if (sociosVeiculo.length === 0) return;
+
+      const receita = Number(v.valor_venda) || 0;
+      const custoVeiculo = (Number(v.veiculo?.valor_custo) || 0) + (Number(v.veiculo?.valor_custo_servicos) || 0);
+      const lucroVenda = receita - custoVeiculo;
+
+      sociosVeiculo.forEach((s: any) => {
+        if (!s.socio_id) return;
+        const porcentagemSocio = Number(s.porcentagem) || 0;
+        const lucroSocio = lucroVenda * (porcentagemSocio / 100);
+
+        const current = socioMap.get(s.socio_id) || {
+          socio_id: s.socio_id, nome: s.nome, valor_investido: 0,
+          porcentagem_estoque: 0, quantidade_carros: 0, lucro_periodo: 0,
+          veiculos: []
+        };
+        socioMap.set(s.socio_id, {
+          ...current,
+          lucro_periodo: current.lucro_periodo + lucroSocio
+        });
+      });
+    });
+
     const totalPassivo = (titulosPagar || []).reduce((acc, t) => acc + (Number(t.valor_total) - (Number(t.valor_pago) || 0)), 0);
     const totalRecebivel = (titulosReceber || []).reduce((acc, t) => acc + (Number(t.valor_total) - (Number(t.valor_pago) || 0)), 0);
     const investimentoSocios = Array.from(socioMap.values()).map(s => ({
@@ -132,6 +170,7 @@ export const CaixaService = {
       patrimonio_liquido: (saldoDisponivel + totalAtivos + totalRecebivel) - totalPassivo,
       saldo_disponivel: saldoDisponivel,
       total_ativos_estoque: totalAtivos,
+      total_recebiveis: totalRecebivel,
       total_passivo_circulante: totalPassivo,
       contas: (contas || []) as any,
       investimento_socios: investimentoSocios,
@@ -140,5 +179,80 @@ export const CaixaService = {
       lucro_mensal: lucroDoPeriodo,
       transacoes: extratoRes.data
     };
+  },
+
+  /**
+   * Busca previsão financeira dos próximos 4 meses
+   * baseado em títulos a pagar e receber com vencimento futuro
+   */
+  async getForecast(): Promise<IForecastMes[]> {
+    const now = new Date();
+    const meses: IForecastMes[] = [];
+
+    // Gerar os 4 meses futuros
+    for (let i = 1; i <= 4; i++) {
+      const targetDate = new Date(now.getFullYear(), now.getMonth() + i, 1);
+      const firstDay = new Date(targetDate.getFullYear(), targetDate.getMonth(), 1).toISOString();
+      const lastDay = new Date(targetDate.getFullYear(), targetDate.getMonth() + 1, 0, 23, 59, 59).toISOString();
+      const nomeMes = targetDate.toLocaleString('pt-BR', { month: 'short' }).replace('.', '');
+      const nomeCapitalizado = nomeMes.charAt(0).toUpperCase() + nomeMes.slice(1);
+
+      meses.push({
+        mes: `${nomeCapitalizado}/${targetDate.getFullYear()}`,
+        mesNum: targetDate.getMonth(),
+        ano: targetDate.getFullYear(),
+        contas_pagar: 0,
+        contas_receber: 0,
+        lucro_projetado: 0,
+        _firstDay: firstDay,
+        _lastDay: lastDay
+      } as any);
+    }
+
+    // Buscar todos os títulos em aberto com vencimento nos próximos 4 meses
+    const primeiroDia = (meses[0] as any)._firstDay;
+    const ultimoDia = (meses[meses.length - 1] as any)._lastDay;
+
+    const [{ data: titulosPagar }, { data: titulosReceber }] = await Promise.all([
+      supabase.from('fin_titulos')
+        .select('valor_total, valor_pago, data_vencimento')
+        .eq('tipo', 'PAGAR')
+        .neq('status', 'PAGO')
+        .neq('status', 'CANCELADO')
+        .gte('data_vencimento', primeiroDia)
+        .lte('data_vencimento', ultimoDia),
+      supabase.from('fin_titulos')
+        .select('valor_total, valor_pago, data_vencimento')
+        .eq('tipo', 'RECEBER')
+        .neq('status', 'PAGO')
+        .neq('status', 'CANCELADO')
+        .gte('data_vencimento', primeiroDia)
+        .lte('data_vencimento', ultimoDia),
+    ]);
+
+    // Distribuir títulos por mês
+    (titulosPagar || []).forEach((t: any) => {
+      const venc = new Date(t.data_vencimento);
+      const saldo = (Number(t.valor_total) || 0) - (Number(t.valor_pago) || 0);
+      const mesIdx = meses.findIndex(m => m.mesNum === venc.getMonth() && m.ano === venc.getFullYear());
+      if (mesIdx >= 0) meses[mesIdx].contas_pagar += saldo;
+    });
+
+    (titulosReceber || []).forEach((t: any) => {
+      const venc = new Date(t.data_vencimento);
+      const saldo = (Number(t.valor_total) || 0) - (Number(t.valor_pago) || 0);
+      const mesIdx = meses.findIndex(m => m.mesNum === venc.getMonth() && m.ano === venc.getFullYear());
+      if (mesIdx >= 0) meses[mesIdx].contas_receber += saldo;
+    });
+
+    // Calcular lucro projetado
+    meses.forEach(m => {
+      m.lucro_projetado = m.contas_receber - m.contas_pagar;
+      // limpar campos internos
+      delete (m as any)._firstDay;
+      delete (m as any)._lastDay;
+    });
+
+    return meses;
   }
 };

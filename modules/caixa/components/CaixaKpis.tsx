@@ -12,11 +12,12 @@ const CaixaKpis: React.FC<Props> = ({ data }) => {
     { label: 'Patrimônio Líquido', val: data.patrimonio_liquido, color: 'indigo', icon: 'M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z' },
     { label: 'Saldo Disponível', val: data.saldo_disponivel, color: 'emerald', icon: 'M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z' },
     { label: 'Ativos (Estoque)', val: data.total_ativos_estoque, color: 'blue', icon: 'M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10' },
+    { label: 'Contas a Receber', val: data.total_recebiveis, color: 'amber', icon: 'M9 14l6-6m-5.5 .5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z' },
     { label: 'Passivo Circulante', val: data.total_passivo_circulante, color: 'rose', icon: 'M13 7h8m0 0v8m0-8l-8 8-4-4-6 6' },
   ];
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-5">
       {kpis.map((k, i) => (
         <div key={i} className="bg-white p-6 rounded-[2.5rem] border border-slate-200 shadow-sm relative overflow-hidden group hover:border-indigo-400 transition-all">
           <div className={`w-12 h-12 rounded-2xl bg-${k.color}-50 text-${k.color}-600 flex items-center justify-center mb-4`}>

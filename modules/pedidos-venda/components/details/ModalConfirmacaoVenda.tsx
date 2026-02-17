@@ -7,12 +7,13 @@ import { FinanceiroAutomationService } from '../../../financeiro/financeiro.auto
 
 interface Props {
   pedido: IPedidoVenda;
+  valorVendaEfetivo: number;
   onClose: () => void;
   onConfirm: (params: { condicao: any, contaId?: string }) => void;
   isLoading: boolean;
 }
 
-const ModalConfirmacaoVenda: React.FC<Props> = ({ pedido, onClose, onConfirm, isLoading }) => {
+const ModalConfirmacaoVenda: React.FC<Props> = ({ pedido, valorVendaEfetivo, onClose, onConfirm, isLoading }) => {
   const [condicoes, setCondicoes] = useState<any[]>([]);
   const [contas, setContas] = useState<any[]>([]);
   const [selectedCondicaoId, setSelectedCondicaoId] = useState('');
@@ -28,10 +29,11 @@ const ModalConfirmacaoVenda: React.FC<Props> = ({ pedido, onClose, onConfirm, is
   }, [pedido.forma_pagamento_id]);
 
   const selectedCondicao = condicoes.find(c => c.id === selectedCondicaoId);
-  const parcelasPrevia = selectedCondicao ? FinanceiroAutomationService.gerarCronograma(pedido.valor_venda, selectedCondicao) : [];
-  
-  const requiresAccount = parcelasPrevia.some(p => p.data_vencimento === new Date().toISOString().split('T')[0]) || 
-                          pedido.forma_pagamento?.destino_lancamento === 'CAIXA';
+  const parcelasPrevia = selectedCondicao ? FinanceiroAutomationService.gerarCronograma(valorVendaEfetivo, selectedCondicao) : [];
+
+  const hoje = new Date().toISOString().split('T')[0];
+  const hasImmediateInstallment = parcelasPrevia.some(p => p.data_vencimento === hoje);
+  const requiresAccount = pedido.forma_pagamento?.destino_lancamento === 'CAIXA' && hasImmediateInstallment;
 
   return (
     <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in">
@@ -48,7 +50,7 @@ const ModalConfirmacaoVenda: React.FC<Props> = ({ pedido, onClose, onConfirm, is
           <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100 grid grid-cols-2 gap-4">
              <div>
                 <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Preço de Venda</p>
-                <p className="text-2xl font-black text-emerald-600">{formatCurrency(pedido.valor_venda)}</p>
+                 <p className="text-2xl font-black text-emerald-600">{formatCurrency(valorVendaEfetivo)}</p>
              </div>
              <div>
                 <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Modalidade</p>

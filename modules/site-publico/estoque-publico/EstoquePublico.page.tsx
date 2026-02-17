@@ -1,55 +1,84 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { SitePublicoService } from '../site-publico.service';
-import { IPublicPageData } from '../site-publico.types';
+import { IMontadoraPublic, IVeiculoPublic } from '../site-publico.types';
+import { IEmpresa } from '../../ajustes/empresa/empresa.types';
 import PublicNavbar from '../components/PublicNavbar';
 import PublicFooter from '../components/PublicFooter';
 import EstoquePublicoFilters from './components/EstoquePublicoFilters';
 import EstoquePublicoList from './components/EstoquePublicoList';
+import { setSEO, setDealerJsonLd, removeJsonLd } from '../utils/seo';
 
-export type SortOption = 'nome' | 'preco_asc' | 'preco_desc';
+export type SortOption = 'created_desc' | 'preco_asc' | 'preco_desc';
 export type GroupOption = 'none' | 'montadora' | 'tipo';
 
 const EstoquePublicoPage: React.FC = () => {
-  const [searchParams, setSearchParams] = useSearchParams();
-  const [data, setData] = useState<IPublicPageData | null>(null);
+  const [searchParams] = useSearchParams();
+  const [empresa, setEmpresa] = useState<IEmpresa | null>(null);
   const [loading, setLoading] = useState(true);
-  const [veiculos, setVeiculos] = useState<any[]>([]);
-  const [montadoras, setMontadoras] = useState<any[]>([]);
+  const [veiculos, setVeiculos] = useState<IVeiculoPublic[]>([]);
+  const [montadoras, setMontadoras] = useState<IMontadoraPublic[]>([]);
 
-  // Estados de Filtro (Sincronizados com URL se possível, mas mantendo local por simplicidade inicial)
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedBrand, setSelectedBrand] = useState<string | null>(null);
   const [minPrice, setMinPrice] = useState<number | ''>('');
   const [maxPrice, setMaxPrice] = useState<number | ''>('');
 
-  // Estados de Paginação e Exibição
   const [page, setPage] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
   const [pageSize] = useState(12);
-  const [sortBy, setSortBy] = useState<SortOption>('created_desc' as any); // Default para mais recentes
+  const [sortBy, setSortBy] = useState<SortOption>('created_desc');
   const [groupBy, setGroupBy] = useState<GroupOption>('none');
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const initialLoadDone = useRef(false);
 
-  // Carrega dados iniciais da empresa e montadoras (apenas uma vez)
+  // Carrega apenas empresa e montadoras (sem buscar veículos da home desnecessariamente)
   useEffect(() => {
     async function loadInitial() {
       try {
-        // Busca dados básicos da página (Empresa, Montadoras para filtro)
-        // Podemos usar getHomePageData ou criar um específico. Vamos usar getHomePageData e ignorar os veiculos dele.
-        const res = await SitePublicoService.getHomePageData();
-        setData(res);
-        setMontadoras(res.montadoras);
+        const [emp, monts] = await Promise.all([
+          SitePublicoService.getEmpresa(),
+          SitePublicoService.getMontadorasComEstoque()
+        ]);
+        setEmpresa(emp);
+        setMontadoras(monts);
 
         // Se houver marca na URL, seleciona ela
-        const marcaId = searchParams.get('marca');
-        if (marcaId) {
-          setSelectedBrand(marcaId);
+        if (!initialLoadDone.current) {
+          const marcaId = searchParams.get('marca');
+          if (marcaId) setSelectedBrand(marcaId);
+          initialLoadDone.current = true;
         }
       } catch (err) {
         console.error(err);
       }
     }
     loadInitial();
+
+    // SEO: Define título e meta tags da página
+    setSEO({
+      title: 'Estoque Completo | Hidrocar Veículos - Veículos em Aracaju/SE',
+      description: 'Confira nosso estoque completo de veículos selecionados. Filtre por marca, preço e encontre o veículo ideal na Hidrocar Veículos.',
+      url: `${window.location.origin}/estoque-publico`
+    });
+
+    // JSON-LD: Dados estruturados da loja
+    setDealerJsonLd({
+      name: 'Hidrocar Veículos - Estoque',
+      description: 'Estoque completo de veículos selecionados com procedência comprovada.',
+      url: `${window.location.origin}/estoque-publico`,
+      image: `${window.location.origin}/logos/logohidrocarsimbolo.png`,
+    });
+
+    const subscription = SitePublicoService.subscribe(() => {
+      loadInitial();
+      setRefreshTrigger(prev => prev + 1);
+    });
+
+    return () => {
+      subscription.unsubscribe();
+      removeJsonLd();
+    };
   }, []);
 
   // Monitora mudanças nos filtros e paginação para buscar veículos
@@ -57,8 +86,7 @@ const EstoquePublicoPage: React.FC = () => {
     async function fetchVehicles() {
       setLoading(true);
       try {
-        const shouldIncludeMontadoras = !selectedBrand && minPrice === '' && maxPrice === '' && !searchTerm && page === 1;
-
+  // Só busca montadoras junto com veículos se ainda não tiver nenhuma
         const res = await SitePublicoService.getStockData({
           page,
           pageSize,
@@ -67,7 +95,7 @@ const EstoquePublicoPage: React.FC = () => {
           maxPrice: maxPrice === '' ? undefined : maxPrice,
           search: searchTerm || undefined,
           sort: sortBy,
-          includeMontadoras: shouldIncludeMontadoras || montadoras.length === 0
+          includeMontadoras: montadoras.length === 0
         });
 
         setVeiculos(res.veiculos);
@@ -86,7 +114,7 @@ const EstoquePublicoPage: React.FC = () => {
     }, 300);
 
     return () => clearTimeout(timeoutId);
-  }, [page, pageSize, selectedBrand, minPrice, maxPrice, searchTerm, sortBy]);
+  }, [page, pageSize, selectedBrand, minPrice, maxPrice, searchTerm, sortBy, refreshTrigger]);
 
   // Resetar página quando filtros mudam
   useEffect(() => {
@@ -110,23 +138,23 @@ const EstoquePublicoPage: React.FC = () => {
 
   const totalPages = Math.ceil(totalItems / pageSize);
 
-  const handleNextPage = () => {
+  const handleNextPage = useCallback(() => {
     if (page < totalPages) {
       setPage(p => p + 1);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
-  };
+  }, [page, totalPages]);
 
-  const handlePrevPage = () => {
+  const handlePrevPage = useCallback(() => {
     if (page > 1) {
       setPage(p => p - 1);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
-  };
+  }, [page]);
 
   return (
     <div className="min-h-screen bg-slate-50 font-['Inter'] antialiased">
-      <PublicNavbar empresa={data?.empresa || {} as any} />
+      <PublicNavbar empresa={empresa || {} as IEmpresa} />
 
       <main className="pt-28 pb-20">
         <div className="max-w-7xl mx-auto px-6">
@@ -146,6 +174,7 @@ const EstoquePublicoPage: React.FC = () => {
                 setSortBy={setSortBy}
                 groupBy={groupBy}
                 setGroupBy={setGroupBy}
+                whatsappPhone={empresa?.telefone}
               />
             </aside>
 
@@ -217,7 +246,7 @@ const EstoquePublicoPage: React.FC = () => {
         </div>
       </main>
 
-      <PublicFooter empresa={data?.empresa || {} as any} />
+      <PublicFooter empresa={empresa || {} as IEmpresa} />
     </div>
   );
 };

@@ -27,8 +27,4 @@ export interface ITituloReceber extends Omit<ITitulo, 'parceiro' | 'categoria'> 
   categoria?: {
     nome: string;
   };
-  pedido_venda?: {
-    id: string;
-    numero_venda: string;
-  };
 }

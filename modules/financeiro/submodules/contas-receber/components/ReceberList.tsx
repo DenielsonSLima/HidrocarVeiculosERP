@@ -57,10 +57,10 @@ const ReceberList: React.FC<Props> = ({ items, loading, isGrouped, onBaixa, onDe
               </td>
               <td className="px-8 py-6">
                 <p className="text-xs font-bold text-slate-700 uppercase truncate max-w-[220px]">{t.parceiro?.nome || t.descricao}</p>
-                {t.pedido_venda && (
-                   <button onClick={() => navigate(`/pedidos-venda/${t.pedido_venda?.id}`)} className="flex items-center mt-1 text-[9px] font-black text-emerald-500 hover:text-emerald-700 uppercase tracking-tighter">
+                {t.pedido_id && (
+                   <button onClick={() => navigate(`/pedidos-venda/${t.pedido_id}`)} className="flex items-center mt-1 text-[9px] font-black text-emerald-500 hover:text-emerald-700 uppercase tracking-tighter">
                      <svg className="w-3 h-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
-                     Venda #{t.pedido_venda.numero_venda}
+                     Ver Pedido de Venda
                    </button>
                 )}
               </td>

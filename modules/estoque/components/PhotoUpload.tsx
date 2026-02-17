@@ -1,5 +1,5 @@
 
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import { IVeiculoFoto } from '../estoque.types';
 
 interface Props {
@@ -10,6 +10,7 @@ interface Props {
 
 const PhotoUpload: React.FC<Props> = ({ fotos, onChange, onNotification }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
   const MAX_PHOTOS = 10;
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -34,12 +35,24 @@ const PhotoUpload: React.FC<Props> = ({ fotos, onChange, onNotification }) => {
 
       // Função auxiliar para comprimir e converter imagem para Base64
       const compressImage = (file: File): Promise<string> => {
-        return new Promise((resolve) => {
+        return new Promise((resolve, reject) => {
           const reader = new FileReader();
+
+          reader.onerror = () => {
+            console.error('Erro ao ler arquivo:', file.name);
+            reject(new Error(`Erro ao ler o arquivo ${file.name}`));
+          };
+
           reader.readAsDataURL(file);
           reader.onload = (event) => {
             const img = new Image();
             img.src = event.target?.result as string;
+
+            img.onerror = () => {
+              console.error('Erro ao carregar imagem para compressão:', file.name);
+              reject(new Error(`O arquivo ${file.name} não é uma imagem válida ou não é suportado.`));
+            };
+
             img.onload = () => {
               const canvas = document.createElement('canvas');
               const MAX_WIDTH = 1920;
@@ -73,19 +86,47 @@ const PhotoUpload: React.FC<Props> = ({ fotos, onChange, onNotification }) => {
         });
       };
 
-      // Processa as imagens selecionadas com compressão
-      const base64Results = await Promise.all(selectedFiles.map((file: File) => compressImage(file)));
+      setIsProcessing(true);
+      try {
+        // Processa as imagens selecionadas com compressão
+        const results = await Promise.allSettled(selectedFiles.map((file: File) => compressImage(file)));
 
-      // Cria os objetos de foto
-      const newPhotos: IVeiculoFoto[] = base64Results.map((url, index) => ({
-        id: crypto.randomUUID(),
-        url: url,
-        ordem: currentCount + index,
-        // Se não havia fotos antes, a primeira do novo lote é a capa
-        is_capa: currentCount === 0 && index === 0
-      }));
+        const base64Results: string[] = [];
+        const errors: string[] = [];
 
-      onChange([...fotos, ...newPhotos]);
+        results.forEach((result, idx) => {
+          if (result.status === 'fulfilled') {
+            base64Results.push(result.value);
+          } else {
+            errors.push(result.reason.message || `Erro ao processar ${selectedFiles[idx].name}`);
+          }
+        });
+
+        if (errors.length > 0) {
+          onNotification(`${errors.length} foto(s) falharam: ${errors.join(', ')}`, 'error');
+        }
+
+        if (base64Results.length > 0) {
+          // Cria os objetos de foto
+          const newPhotos: IVeiculoFoto[] = base64Results.map((url, index) => ({
+            id: Math.random().toString(36).substring(2, 15) + Date.now().toString(36),
+            url: url,
+            ordem: currentCount + index,
+            // Se não havia fotos antes, a primeira do novo lote é a capa
+            is_capa: currentCount === 0 && index === 0
+          }));
+
+          onChange([...fotos, ...newPhotos]);
+          if (errors.length === 0) {
+            onNotification(`${base64Results.length} foto(s) adicionadas com sucesso.`, 'success');
+          }
+        }
+      } catch (err) {
+        console.error('Erro fatal no processamento de imagens:', err);
+        onNotification('Ocorreu um erro inesperado ao processar as imagens.', 'error');
+      } finally {
+        setIsProcessing(false);
+      }
     }
 
     // Reset input para permitir selecionar as mesmas fotos novamente se necessário
@@ -137,15 +178,21 @@ const PhotoUpload: React.FC<Props> = ({ fotos, onChange, onNotification }) => {
         {/* Botão de Adicionar */}
         {fotos.length < MAX_PHOTOS && (
           <div
-            onClick={() => fileInputRef.current?.click()}
-            className="aspect-[4/3] border-2 border-dashed border-slate-300 rounded-2xl flex flex-col items-center justify-center cursor-pointer hover:bg-slate-50 hover:border-indigo-400 transition-all group"
+            onClick={() => !isProcessing && fileInputRef.current?.click()}
+            className={`aspect-[4/3] border-2 border-dashed border-slate-300 rounded-2xl flex flex-col items-center justify-center cursor-pointer hover:bg-slate-50 hover:border-indigo-400 transition-all group ${isProcessing ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
-            <div className="w-10 h-10 bg-white rounded-full shadow-sm flex items-center justify-center text-slate-400 group-hover:text-indigo-600 group-hover:scale-110 transition-all">
-              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-              </svg>
-            </div>
-            <span className="mt-2 text-[10px] font-black text-slate-400 uppercase tracking-widest group-hover:text-indigo-600">Adicionar Fotos</span>
+            {isProcessing ? (
+              <div className="w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+            ) : (
+              <div className="w-10 h-10 bg-white rounded-full shadow-sm flex items-center justify-center text-slate-400 group-hover:text-indigo-600 group-hover:scale-110 transition-all">
+                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+              </div>
+            )}
+            <span className="mt-2 text-[10px] font-black text-slate-400 uppercase tracking-widest group-hover:text-indigo-600">
+              {isProcessing ? 'Processando...' : 'Adicionar Fotos'}
+            </span>
           </div>
         )}
 

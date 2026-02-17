@@ -1,60 +1,58 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { IVeiculo } from '../../estoque/estoque.types';
+import { IVeiculoPublic } from '../site-publico.types';
 import { ICor } from '../../cadastros/cores/cores.types';
+import { formatCurrency } from '../utils/currency';
 
 interface Props {
-  veiculo: IVeiculo;
+  veiculo: IVeiculoPublic;
   cores?: ICor[];
   onClick?: () => void;
 }
 
-const PublicVehicleCard: React.FC<Props> = ({ veiculo, cores = [] }) => {
+const PublicVehicleCard: React.FC<Props> = React.memo(({ veiculo, cores = [] }) => {
   const navigate = useNavigate();
   const [activePhotoIndex, setActivePhotoIndex] = useState(0);
-  const v = veiculo as any;
+  const v = veiculo;
 
-  const fotos = veiculo.fotos || [];
+  const fotos = useMemo(() => veiculo.fotos || [], [veiculo.fotos]);
   const hasPhotos = fotos.length > 0;
   const currentPhoto = hasPhotos ? fotos[activePhotoIndex] : null;
 
-  const formatCurrency = (val: number) => new Intl.NumberFormat('pt-BR', {
-    style: 'currency',
-    currency: 'BRL',
-    maximumFractionDigits: 0
-  }).format(val);
-
-  const handleNext = (e: React.MouseEvent) => {
+  const handleNext = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
     setActivePhotoIndex((prev) => (prev + 1) % fotos.length);
-  };
+  }, [fotos.length]);
 
-  const handlePrev = (e: React.MouseEvent) => {
+  const handlePrev = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
     setActivePhotoIndex((prev) => (prev - 1 + fotos.length) % fotos.length);
-  };
+  }, [fotos.length]);
 
-  const handleClick = () => {
+  const handleClick = useCallback(() => {
     navigate(`/veiculo/${veiculo.id}`);
     window.scrollTo(0, 0);
-  };
+  }, [navigate, veiculo.id]);
 
   return (
     <div
       onClick={handleClick}
-      className="group bg-white border border-slate-200 rounded-[2.5rem] overflow-hidden hover:shadow-[0_30px_60px_-15px_rgba(0,0,0,0.1)] hover:border-[#004691] transition-all duration-500 cursor-pointer flex flex-col h-full animate-in fade-in"
+      role="article"
+      tabIndex={0}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleClick(); } }}
+      className="group bg-white border border-slate-200 rounded-[2.5rem] overflow-hidden hover:shadow-[0_30px_60px_-15px_rgba(0,0,0,0.1)] hover:border-[#004691] transition-all duration-500 cursor-pointer flex flex-col h-full animate-in fade-in focus:outline-none focus:ring-4 focus:ring-[#004691]/20"
     >
       {/* 1. Mídia / Carrossel */}
       <div className="aspect-[16/10] bg-slate-900 relative overflow-hidden shrink-0">
         {hasPhotos ? (
           <>
-            <img src={currentPhoto?.url} className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110" alt="Veículo" loading="lazy" decoding="async" />
+            <img src={currentPhoto?.url} className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110" alt={`${v.montadora?.nome || ''} ${v.modelo?.nome || ''} ${v.ano_modelo || ''} - ${v.versao?.nome || ''}`.trim()} loading="lazy" decoding="async" />
             {fotos.length > 1 && (
               <div className="absolute inset-0 flex items-center justify-between px-4 opacity-0 group-hover:opacity-100 transition-opacity z-10">
-                <button onClick={handlePrev} className="p-2 rounded-full bg-black/40 backdrop-blur-md text-white hover:bg-[#004691] transition-all">
+                <button onClick={handlePrev} aria-label="Foto anterior" className="p-2 rounded-full bg-black/40 backdrop-blur-md text-white hover:bg-[#004691] transition-all">
                   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path d="M15 19l-7-7 7-7" /></svg>
                 </button>
-                <button onClick={handleNext} className="p-2 rounded-full bg-black/40 backdrop-blur-md text-white hover:bg-[#004691] transition-all">
+                <button onClick={handleNext} aria-label="Próxima foto" className="p-2 rounded-full bg-black/40 backdrop-blur-md text-white hover:bg-[#004691] transition-all">
                   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path d="M9 5l7 7-7 7" /></svg>
                 </button>
               </div>
@@ -131,6 +129,8 @@ const PublicVehicleCard: React.FC<Props> = ({ veiculo, cores = [] }) => {
       </div>
     </div>
   );
-};
+});
+
+PublicVehicleCard.displayName = 'PublicVehicleCard';
 
 export default PublicVehicleCard;

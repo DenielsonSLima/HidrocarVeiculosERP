@@ -7,7 +7,9 @@ interface Props {
   veiculos: IVeiculo[];
 }
 
-const RecentVehicles: React.FC<Props> = ({ veiculos }) => {
+const RecentVehicles: React.FC<Props> = React.memo(({ veiculos }) => {
+  if (!veiculos || veiculos.length === 0) return null;
+
   return (
     <section id="estoque" className="py-20 bg-slate-50">
       <div className="max-w-7xl mx-auto px-6">
@@ -31,6 +33,8 @@ const RecentVehicles: React.FC<Props> = ({ veiculos }) => {
       </div>
     </section>
   );
-};
+});
+
+RecentVehicles.displayName = 'RecentVehicles';
 
 export default RecentVehicles;

@@ -52,7 +52,13 @@ const VendasTemplate: React.FC<Props> = ({ empresa, watermark, data }) => {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {(data.items || []).map((item: any, i: number) => (
+              {(data.items || []).length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="px-4 py-12 text-center text-slate-400 font-bold text-xs uppercase tracking-widest">
+                    Nenhuma venda encontrada no período selecionado
+                  </td>
+                </tr>
+              ) : (data.items || []).map((item: any, i: number) => (
                 <tr key={i}>
                   <td className="px-4 py-3">{item.data}</td>
                   <td className="px-4 py-3 font-bold uppercase">{item.veiculo}</td>

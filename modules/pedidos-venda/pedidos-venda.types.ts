@@ -5,6 +5,8 @@ import { IFormaPagamento } from '../cadastros/formas-pagamento/formas-pagamento.
 import { ICondicaoRecebimento } from '../cadastros/condicoes-recebimento/condicoes-recebimento.types';
 import { IContaBancaria } from '../ajustes/contas-bancarias/contas.types';
 
+import { ICorretor } from '../cadastros/corretores/corretores.types';
+
 export type StatusPedidoVenda = 'RASCUNHO' | 'CONCLUIDO' | 'CANCELADO';
 export type VendaTab = 'MES_ATUAL' | 'RASCUNHO' | 'TODOS';
 
@@ -56,6 +58,7 @@ export interface IPedidoVenda {
   veiculo?: IVeiculo & { pedido_compra?: { id: string, forma_pagamento?: IFormaPagamento } };
   pagamentos?: IVendaPagamento[];
   forma_pagamento?: IFormaPagamento;
+  corretor?: ICorretor;
 }
 
 export interface IVendaFiltros {

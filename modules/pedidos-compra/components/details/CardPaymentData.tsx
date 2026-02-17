@@ -80,7 +80,8 @@ const CardPaymentData: React.FC<Props> = ({ pedido, totalAquisicaoReferencia, on
         <table className="w-full text-left">
           <thead className="bg-slate-50 border-b border-slate-100">
             <tr>
-              <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Data / Venc.</th>
+              <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Data</th>
+              <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Vencimento</th>
               <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Forma / Condição</th>
               <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Valor</th>
               <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Ações</th>
@@ -91,6 +92,9 @@ const CardPaymentData: React.FC<Props> = ({ pedido, totalAquisicaoReferencia, on
               pedido.pagamentos.map((p) => (
                 <tr key={p.id} className="hover:bg-slate-50/50 transition-colors group">
                   <td className="px-6 py-4 text-xs font-bold text-slate-700">
+                    {p.created_at ? new Date(p.created_at).toLocaleDateString('pt-BR') : '-'}
+                  </td>
+                  <td className="px-6 py-4 text-xs font-black text-indigo-600">
                     {new Date(p.data_pagamento).toLocaleDateString('pt-BR')}
                   </td>
                   <td className="px-6 py-4">
@@ -118,7 +122,7 @@ const CardPaymentData: React.FC<Props> = ({ pedido, totalAquisicaoReferencia, on
               ))
             ) : (
               <tr>
-                <td colSpan={4} className="px-6 py-12 text-center text-slate-300 italic text-xs uppercase font-bold tracking-widest">
+                <td colSpan={5} className="px-6 py-12 text-center text-slate-300 italic text-xs uppercase font-bold tracking-widest">
                   Nenhum pagamento lançado para esta negociação.
                 </td>
               </tr>

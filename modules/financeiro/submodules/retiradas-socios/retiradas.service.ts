@@ -49,12 +49,14 @@ export const RetiradasService = {
     // 2. Se for novo, abate do saldo da conta bancária e lança no extrato
     if (isNew) {
       // Ajuste de Saldo
-      const { data: conta } = await supabase.from('fin_contas_bancarias').select('saldo_atual').eq('id', payload.conta_origem_id).single();
-      await supabase.from('fin_contas_bancarias').update({ saldo_atual: (conta.saldo_atual - payload.valor!) }).eq('id', payload.conta_origem_id);
+      const { data: conta, error: errConta } = await supabase.from('fin_contas_bancarias').select('saldo_atual').eq('id', payload.conta_origem_id).single();
+      if (errConta || !conta) throw new Error('Conta bancária de origem não encontrada.');
+      await supabase.from('fin_contas_bancarias').update({ saldo_atual: (Number(conta.saldo_atual) - payload.valor!), updated_at: new Date().toISOString() }).eq('id', payload.conta_origem_id);
 
-      // Lançamento no Extrato
+      // Lançamento no Extrato (vinculado pelo retirada_id para exclusão segura)
       await supabase.from('fin_transacoes').insert({
         conta_origem_id: payload.conta_origem_id,
+        retirada_id: currentRetirada.id,
         valor: payload.valor,
         tipo: 'SAIDA',
         data_pagamento: payload.data,
@@ -68,11 +70,17 @@ export const RetiradasService = {
     const { data: old } = await supabase.from(TABLE).select('*').eq('id', id).single();
     if (old) {
       // Reverte saldo
-      const { data: conta } = await supabase.from('fin_contas_bancarias').select('saldo_atual').eq('id', old.conta_origem_id).single();
-      await supabase.from('fin_contas_bancarias').update({ saldo_atual: (conta.saldo_atual + old.valor) }).eq('id', old.conta_origem_id);
+      const { data: conta, error: errConta } = await supabase.from('fin_contas_bancarias').select('saldo_atual').eq('id', old.conta_origem_id).single();
+      if (!errConta && conta) {
+        await supabase.from('fin_contas_bancarias').update({ saldo_atual: (Number(conta.saldo_atual) + old.valor), updated_at: new Date().toISOString() }).eq('id', old.conta_origem_id);
+      }
       
-      // Remove do extrato
-      await supabase.from('fin_transacoes').delete().match({ tipo_transacao: 'RETIRADA_SOCIO', valor: old.valor, data_pagamento: old.data });
+      // Remove do extrato vinculado por retirada_id (seguro) com fallback por match
+      const { error: errDelTx } = await supabase.from('fin_transacoes').delete().eq('retirada_id', id);
+      if (errDelTx) {
+        // Fallback: tenta por match (retrocompatibilidade com registros antigos)
+        await supabase.from('fin_transacoes').delete().match({ tipo_transacao: 'RETIRADA_SOCIO', valor: old.valor, data_pagamento: old.data, conta_origem_id: old.conta_origem_id });
+      }
     }
 
     const { error } = await supabase.from(TABLE).delete().eq('id', id);

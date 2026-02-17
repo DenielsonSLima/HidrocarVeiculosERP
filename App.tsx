@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState } from 'react';
-import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Layout from './components/Layout.tsx';
 import { AuthService } from './modules/auth/auth.service.ts';
 import { supabase } from './lib/supabase.ts';
@@ -43,6 +43,8 @@ import RelatorioVendasPage from './modules/relatorios/pages/RelatorioVendas.page
 import RelatorioEstoquePage from './modules/relatorios/pages/RelatorioEstoque.page.tsx';
 import RelatorioFinanceiroPage from './modules/relatorios/pages/RelatorioFinanceiro.page.tsx';
 import RelatorioAuditoriaPage from './modules/relatorios/pages/RelatorioAuditoria.page.tsx';
+import RelatorioComissoesPage from './modules/relatorios/pages/RelatorioComissoes.page.tsx';
+import RelatorioServicosPage from './modules/relatorios/pages/RelatorioServicos.page.tsx';
 
 // Submódulos Cadastros
 import CidadesPage from './modules/cadastros/cidades/Cidades.page.tsx';
@@ -97,7 +99,7 @@ const App: React.FC = () => {
   }, []);
 
   // Se estiver carregando, mostramos um loader apenas para rotas internas (via hash)
-  const isPublicRoute = window.location.hash === '' || window.location.hash === '#/' || window.location.hash.startsWith('#/veiculo/') || window.location.hash.startsWith('#/estoque-publico');
+  const isPublicRoute = window.location.pathname === '/' || window.location.pathname.startsWith('/veiculo/') || window.location.pathname.startsWith('/estoque-publico');
 
   if (loading && !isPublicRoute) {
     return (
@@ -112,7 +114,7 @@ const App: React.FC = () => {
 
   return (
 
-    <HashRouter>
+    <BrowserRouter>
       <ScrollToTop />
       <Routes>
         {/* Rota Raiz: Site Público */}
@@ -159,12 +161,14 @@ const App: React.FC = () => {
                 <Route path="/pedidos-compra/:id/veiculo-detalhes/:veiculoId" element={<PedidoCompraVeiculoDetalhesPage />} />
                 <Route path="/pedidos-compra/editar/:id" element={<PedidoCompraFormPage />} />
                 <Route path="/pedidos-compra/:pedidoId/adicionar-veiculo" element={<EstoqueFormPage />} />
+                <Route path="/pedidos-compra/:pedidoId/veiculo/editar/:id" element={<EstoqueFormPage />} />
 
                 <Route path="/pedidos-venda" element={<PedidoVendaPage />} />
                 <Route path="/pedidos-venda/novo" element={<VendaFormPage />} />
-                <Route path="/pedidos-venda/:id" element={<PedidoVendaDetalhesPage />} />
-                <Route path="/pedidos-venda/:id/veiculo-detalhes/:veiculoId" element={<VendaVeiculoDetalhesPage />} />
                 <Route path="/pedidos-venda/editar/:id" element={<VendaFormPage />} />
+                <Route path="/pedidos-venda/:id" element={<PedidoVendaDetalhesPage />} />
+                <Route path="/pedidos-venda/:pedidoId/veiculo/editar/:id" element={<EstoqueFormPage />} />
+                <Route path="/pedidos-venda/:id/veiculo-detalhes/:veiculoId" element={<VendaVeiculoDetalhesPage />} />
 
                 <Route path="/caixa" element={<CaixaPage />} />
                 <Route path="/financeiro" element={<FinanceiroPage />} />
@@ -175,6 +179,8 @@ const App: React.FC = () => {
                 <Route path="/relatorios/estoque" element={<RelatorioEstoquePage />} />
                 <Route path="/relatorios/financeiro" element={<RelatorioFinanceiroPage />} />
                 <Route path="/relatorios/auditoria" element={<RelatorioAuditoriaPage />} />
+                <Route path="/relatorios/comissoes" element={<RelatorioComissoesPage />} />
+                <Route path="/relatorios/servicos" element={<RelatorioServicosPage />} />
 
                 <Route path="/editor-site" element={<EditorSitePage />} />
 
@@ -197,7 +203,7 @@ const App: React.FC = () => {
           )
         } />
       </Routes>
-    </HashRouter>
+    </BrowserRouter>
   );
 };
 

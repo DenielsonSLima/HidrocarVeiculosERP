@@ -30,6 +30,7 @@ export interface ITitulo {
   id: string;
   parceiro_id?: string;
   categoria_id?: string;
+  pedido_id?: string;
   descricao: string;
   tipo: TipoTitulo;
   status: StatusTitulo;
@@ -86,4 +87,55 @@ export interface IExtratoTotals {
   entradas: number;
   saidas: number;
   balanco: number;
+}
+
+// ─── HISTÓRICO GERAL UNIFICADO ─────────────────────────
+export type OrigemHistorico = 'COMPRA' | 'VENDA' | 'DESPESA_VEICULO' | 'TRANSFERENCIA' | 'RETIRADA' | 'CREDITO' | 'SALDO_INICIAL' | 'MANUAL';
+export type StatusHistorico = 'REALIZADO' | 'PENDENTE' | 'PARCIAL' | 'ATRASADO' | 'CANCELADO';
+
+export interface IHistoricoUnificado {
+  id: string;
+  data: string;                  // data_pagamento (transação) ou data_vencimento (título)
+  data_emissao?: string;         // data de criação/emissão
+  tipo_movimento: 'ENTRADA' | 'SAIDA' | 'TRANSFERENCIA' | 'A_PAGAR' | 'A_RECEBER';
+  descricao: string;
+  valor: number;
+  valor_pago?: number;
+  valor_restante?: number;
+  status: StatusHistorico;
+  origem: OrigemHistorico;
+  parceiro_nome?: string;
+  conta_nome?: string;
+  forma_pagamento?: string;
+  parcela_info?: string;         // "2/5"
+  pedido_ref?: string;           // "PC-001" ou "VD-001"
+  pedido_id?: string;
+  titulo_id?: string;
+  source: 'TRANSACAO' | 'TITULO';
+}
+
+export interface IHistoricoFiltros {
+  dataInicio?: string;
+  dataFim?: string;
+  tipo?: string;                 // ENTRADA | SAIDA | A_PAGAR | A_RECEBER | TRANSFERENCIA
+  status?: string;               // REALIZADO | PENDENTE | PARCIAL | ATRASADO
+  origem?: string;               // COMPRA | VENDA | DESPESA_VEICULO | TRANSFERENCIA | etc
+  busca?: string;                // texto livre
+  page?: number;
+  limit?: number;
+}
+
+export interface IHistoricoResponse {
+  data: IHistoricoUnificado[];
+  count: number;
+  currentPage: number;
+  totalPages: number;
+}
+
+export interface IHistoricoTotals {
+  entradas_realizadas: number;
+  saidas_realizadas: number;
+  a_pagar_pendente: number;
+  a_receber_pendente: number;
+  saldo_periodo: number;
 }

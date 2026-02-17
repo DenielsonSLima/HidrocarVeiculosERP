@@ -28,7 +28,7 @@ const PedidoCompraPage: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
-  const ITEMS_PER_PAGE = 9;
+  const ITEMS_PER_PAGE = 12;
 
   // Filters
   const [activeTab, setActiveTab] = useState<'EFETIVADOS' | 'RASCUNHO' | 'TODOS'>('EFETIVADOS');

@@ -1,9 +1,10 @@
 
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { IPedidoVenda } from '../../pedidos-venda.types';
 import { IVeiculo } from '../../../estoque/estoque.types';
 import VehicleInSaleCard from './vehicle-card/VehicleInSaleCard';
 import { EstoqueService } from '../../../estoque/estoque.service';
+import { PedidosVendaService } from '../../pedidos-venda.service';
 
 interface Props {
   pedido: IPedidoVenda;
@@ -15,13 +16,41 @@ interface Props {
 
 const VeiculosVendaList: React.FC<Props> = ({ pedido, veiculosDisponiveis, onLink, onUnlink, isConcluido }) => {
   const [showSelector, setShowSelector] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
   
   const veiculosList = (pedido as any).veiculos || (pedido.veiculo ? [pedido.veiculo] : []);
+
+  const normalizedSearch = searchTerm.trim().toLowerCase();
+  const filteredVehicles = useMemo(() => {
+    const linkedIds = new Set(veiculosList.map((v: any) => v.id));
+
+    return (veiculosDisponiveis as any[])
+      .filter((v) => !linkedIds.has(v.id))
+      .filter((v) => {
+        if (!normalizedSearch) return true;
+        const text = [
+          v.placa,
+          v.montadora?.nome,
+          v.modelo?.nome,
+          v.tipo_veiculo?.nome,
+          v.motorizacao,
+          String(v.km || ''),
+        ]
+          .filter(Boolean)
+          .join(' ')
+          .toLowerCase();
+
+        return text.includes(normalizedSearch);
+      });
+  }, [veiculosDisponiveis, veiculosList, normalizedSearch]);
 
   const handleUpdatePrice = async (vId: string, newPrice: number) => {
     try {
       // O preço de venda é alterado no cadastro do veículo para refletir na rentabilidade do lote
       await EstoqueService.save({ id: vId, valor_venda: newPrice });
+      if (pedido.id && pedido.veiculo_id === vId) {
+        await PedidosVendaService.save({ id: pedido.id, valor_venda: newPrice });
+      }
       // O PedidoVendaDetalhes atualizará os dados via Realtime
     } catch (e) {
       alert("Erro ao atualizar preço negociado.");
@@ -51,26 +80,62 @@ const VeiculosVendaList: React.FC<Props> = ({ pedido, veiculosDisponiveis, onLin
       {showSelector && !isConcluido && (
         <div className="bg-white rounded-[2.5rem] p-8 border border-slate-200 shadow-sm animate-in zoom-in-95 duration-300">
           <label className="block text-[10px] font-black text-slate-400 uppercase mb-4 ml-1 tracking-widest">Buscar Veículo em Estoque</label>
-          <div className="relative">
-            <select 
+          <div className="space-y-4">
+            <input
               autoFocus
-              onChange={(e) => {
-                if (e.target.value) {
-                  onLink(e.target.value);
-                  setShowSelector(false);
-                }
-              }}
-              className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 py-4 font-black text-indigo-600 outline-none focus:ring-4 focus:ring-indigo-500/10 transition-all appearance-none cursor-pointer"
-            >
-              <option value="">Clique para buscar...</option>
-              {veiculosDisponiveis.map((v: any) => (
-                <option key={v.id} value={v.id}>
-                  {v.montadora?.nome} {v.modelo?.nome} • {v.placa} ({v.ano_modelo})
-                </option>
-              ))}
-            </select>
-            <div className="absolute right-6 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
-               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Digite placa, montadora, modelo, categoria, motorização ou KM"
+              className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 py-4 font-bold text-slate-700 outline-none focus:ring-4 focus:ring-indigo-500/10 transition-all"
+            />
+
+            <div className="max-h-[420px] overflow-y-auto space-y-3 pr-1">
+              {filteredVehicles.length === 0 ? (
+                <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-6 text-center">
+                  <p className="text-xs font-black text-slate-400 uppercase tracking-wider">Nenhum veículo encontrado</p>
+                </div>
+              ) : (
+                filteredVehicles.map((v: any) => (
+                  <button
+                    key={v.id}
+                    type="button"
+                    onClick={() => {
+                      onLink(v.id);
+                      setShowSelector(false);
+                      setSearchTerm('');
+                    }}
+                    className="w-full text-left bg-slate-50 hover:bg-indigo-50 border border-slate-200 hover:border-indigo-200 rounded-2xl p-4 transition-all"
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className="w-20 h-20 rounded-xl border border-slate-200 bg-white overflow-hidden shrink-0">
+                        {v.fotos?.[0]?.url ? (
+                          <img src={v.fotos[0].url} alt={`${v.montadora?.nome || ''} ${v.modelo?.nome || ''}`} className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-slate-300">
+                            <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="min-w-0 flex-1">
+                        <p className="text-[10px] font-black text-indigo-500 uppercase tracking-widest mb-1 truncate">
+                          {v.montadora?.nome || 'Montadora'}
+                        </p>
+                        <h4 className="text-base font-black text-slate-900 uppercase tracking-tight truncate">
+                          {v.modelo?.nome || 'Modelo'}
+                        </h4>
+                        <div className="mt-2 grid grid-cols-2 lg:grid-cols-3 gap-2">
+                          <span className="text-[10px] font-bold text-slate-600 uppercase truncate">Categoria: {v.tipo_veiculo?.nome || 'N/D'}</span>
+                          <span className="text-[10px] font-bold text-slate-600 uppercase truncate">Motorização: {v.motorizacao || 'N/D'}</span>
+                          <span className="text-[10px] font-bold text-slate-600 uppercase truncate">KM: {(v.km || 0).toLocaleString('pt-BR')}</span>
+                          <span className="text-[10px] font-black text-slate-700 uppercase truncate">Placa: {v.placa || 'N/D'}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </button>
+                ))
+              )}
             </div>
           </div>
         </div>

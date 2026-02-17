@@ -18,14 +18,14 @@ const RelatoriosPage: React.FC = () => {
       nome: 'Comercial & Vendas',
       items: [
         { id: 'vendas', titulo: 'Vendas Detalhadas', descricao: 'Análise de performance por período, vendedor e margem.', icon: 'M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z', color: 'emerald', path: '/relatorios/vendas' },
-        { id: 'comissoes', titulo: 'Relatório de Comissões', descricao: 'Cálculo de repasses devidos a corretores e vendedores.', icon: 'M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1', color: 'indigo', path: '/relatorios/vendas' },
+        { id: 'comissoes', titulo: 'Relatório de Comissões', descricao: 'Cálculo de repasses devidos a corretores e vendedores.', icon: 'M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1', color: 'indigo', path: '/relatorios/comissoes' },
       ]
     },
     {
       nome: 'Operacional & Estoque',
       items: [
         { id: 'estoque', titulo: 'Posição de Estoque', descricao: 'Inventário completo com tempo de pátio e custo médio.', icon: 'M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4', color: 'blue', path: '/relatorios/estoque' },
-        { id: 'servicos', titulo: 'Gastos com Serviços', descricao: 'Histórico de manutenções e preparações por veículo.', icon: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2', color: 'amber', path: '/relatorios/estoque' },
+        { id: 'servicos', titulo: 'Gastos com Serviços', descricao: 'Histórico de manutenções e preparações por veículo.', icon: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2', color: 'amber', path: '/relatorios/servicos' },
       ]
     },
     {

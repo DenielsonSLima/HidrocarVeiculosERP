@@ -23,7 +23,7 @@ export const DespesasFixasService = {
       const ultimoDia = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0];
       query = query.gte('data_vencimento', primeiroDia).lte('data_vencimento', ultimoDia);
     } else if (tab === 'ATRASADOS') {
-      query = query.lt('data_vencimento', hoje).neq('status', 'PAGO');
+      query = query.lt('data_vencimento', hoje).neq('status', 'PAGO').neq('status', 'CANCELADO');
     }
 
     if (filtros.busca) {
@@ -38,6 +38,31 @@ export const DespesasFixasService = {
     
     if (error) throw error;
     return data as any as ITituloFixa[];
+  },
+
+  async save(payload: {
+    descricao: string;
+    valor_total: number;
+    data_vencimento: string;
+    categoria_id: string;
+    parceiro_id?: string;
+    documento_ref?: string;
+  }): Promise<void> {
+    const { error } = await supabase.from(TABLE).insert({
+      descricao: payload.descricao,
+      valor_total: payload.valor_total,
+      valor_pago: 0,
+      data_emissao: new Date().toISOString().split('T')[0],
+      data_vencimento: payload.data_vencimento,
+      tipo: 'PAGAR',
+      status: 'PENDENTE',
+      categoria_id: payload.categoria_id,
+      parceiro_id: payload.parceiro_id || null,
+      documento_ref: payload.documento_ref || null,
+      parcela_numero: 1,
+      parcela_total: 1,
+    });
+    if (error) throw error;
   },
 
   async delete(id: string): Promise<void> {

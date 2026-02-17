@@ -21,10 +21,10 @@ import VehicleQuickInfoCard from './components/details/VehicleQuickInfoCard';
 const EstoqueDetalhesPage: React.FC = () => {
   const navigate = useNavigate();
   const { id, pedidoId } = useParams();
-  
+
   const [veiculo, setVeiculo] = useState<IVeiculo | null>(null);
   const [loading, setLoading] = useState(true);
-  
+
   // Dados auxiliares
   const [allCaracteristicas, setAllCaracteristicas] = useState<ICaracteristica[]>([]);
   const [allOpcionais, setAllOpcionais] = useState<IOpcional[]>([]);
@@ -44,7 +44,7 @@ const EstoqueDetalhesPage: React.FC = () => {
         OpcionaisService.getAll(),
         CoresService.getAll()
       ]);
-      
+
       setVeiculo(vData);
       setAllCaracteristicas(carData);
       setAllOpcionais(opData);
@@ -64,7 +64,7 @@ const EstoqueDetalhesPage: React.FC = () => {
   };
 
   const handleEdit = () => {
-    if (pedidoId) navigate(`/pedidos-compra/${pedidoId}/veiculo/${id}`);
+    if (pedidoId) navigate(`/pedidos-compra/${pedidoId}/veiculo/editar/${id}`);
     else navigate(`/estoque/editar/${id}`);
   };
 
@@ -99,23 +99,23 @@ const EstoqueDetalhesPage: React.FC = () => {
 
   return (
     <div className="pb-20 animate-in fade-in duration-500 max-w-screen-2xl mx-auto px-4 md:px-8">
-      
-      <HeaderDetails 
-        veiculo={veiculo} 
-        onBack={handleBack} 
-        onEdit={handleEdit} 
+
+      <HeaderDetails
+        veiculo={veiculo}
+        onBack={handleBack}
+        onEdit={handleEdit}
       />
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start mb-10">
-        
+
         {/* COLUNA ESQUERDA - Identificação, Mídia e Features */}
         <div className="lg:col-span-7 space-y-6">
           <VehicleQuickInfoCard veiculo={veiculo} />
           <GalleryCard fotos={veiculo.fotos || []} />
-          <FeaturesCard 
-            veiculo={veiculo} 
-            allCaracteristicas={allCaracteristicas} 
-            allOpcionais={allOpcionais} 
+          <FeaturesCard
+            veiculo={veiculo}
+            allCaracteristicas={allCaracteristicas}
+            allOpcionais={allOpcionais}
           />
         </div>
 
@@ -128,11 +128,11 @@ const EstoqueDetalhesPage: React.FC = () => {
 
       {/* Card de Despesas - Full Width */}
       <div className="w-full">
-         <VehicleExpensesCard 
-            veiculo={veiculo}
-            onAddExpense={handleAddExpense}
-            onDeleteExpense={handleDeleteExpense}
-         />
+        <VehicleExpensesCard
+          veiculo={veiculo}
+          onAddExpense={handleAddExpense}
+          onDeleteExpense={handleDeleteExpense}
+        />
       </div>
     </div>
   );

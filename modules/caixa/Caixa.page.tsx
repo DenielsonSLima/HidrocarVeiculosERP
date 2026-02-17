@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { CaixaService } from './caixa.service';
-import { ICaixaDashboardData, CaixaTab } from './caixa.types';
+import { ICaixaDashboardData, CaixaTab, IForecastMes } from './caixa.types';
 import { EmpresaService } from '../ajustes/empresa/empresa.service';
 import { MarcaDaguaService } from '../ajustes/marca-dagua/marca-dagua.service';
 
@@ -8,7 +8,9 @@ import { MarcaDaguaService } from '../ajustes/marca-dagua/marca-dagua.service';
 import CaixaKpis from './components/CaixaKpis';
 import AccountsOverview from './components/AccountsOverview';
 import SocioStockOverview from './components/SocioStockOverview';
+import SocioInvestimentoCards from './components/SocioInvestimentoCards';
 import MonthlyPerformance from './components/MonthlyPerformance';
+import ForecastChart from './components/ForecastChart';
 import QuickPreviewModal from './components/QuickPreviewModal';
 import CaixaPrint from './components/CaixaPrint';
 
@@ -17,6 +19,7 @@ const CaixaPage: React.FC = () => {
   const [data, setData] = useState<ICaixaDashboardData | null>(null);
   const [empresa, setEmpresa] = useState<any>(null);
   const [watermark, setWatermark] = useState<any>(null);
+  const [forecast, setForecast] = useState<IForecastMes[]>([]);
   const [loading, setLoading] = useState(true);
   const [showPreview, setShowPreview] = useState(false);
 
@@ -27,14 +30,16 @@ const CaixaPage: React.FC = () => {
   async function loadData() {
     setLoading(true);
     try {
-      const [res, empRes, watRes] = await Promise.all([
+      const [res, empRes, watRes, forecastRes] = await Promise.all([
         CaixaService.getDashboardData(activeTab === 'MES_ATUAL' ? 'atual' : 'anteriores'),
         EmpresaService.getDadosEmpresa(),
-        MarcaDaguaService.getConfig()
+        MarcaDaguaService.getConfig(),
+        CaixaService.getForecast()
       ]);
       setData(res);
       setEmpresa(empRes);
       setWatermark(watRes);
+      setForecast(forecastRes);
     } catch (error) {
       console.error(error);
     } finally {
@@ -107,18 +112,21 @@ const CaixaPage: React.FC = () => {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2 space-y-6">
               <SocioStockOverview socios={data.investimento_socios} />
-
             </div>
             <div className="space-y-6">
               <AccountsOverview contas={data.contas} />
             </div>
           </div>
 
+          <SocioInvestimentoCards socios={data.investimento_socios} />
+
           <MonthlyPerformance
             vendas={data.total_vendas}
             compras={data.total_compras}
             lucro={data.lucro_mensal}
           />
+
+          <ForecastChart forecast={forecast} />
 
           {/* MOVIMENTAÇÕES SEPARADAS POR TIPO */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -225,6 +233,7 @@ const CaixaPage: React.FC = () => {
               empresa={empresa}
               watermark={watermark}
               periodo={formattedPeriod}
+              forecast={forecast}
             />
           </QuickPreviewModal>
 
@@ -234,6 +243,7 @@ const CaixaPage: React.FC = () => {
               empresa={empresa}
               watermark={watermark}
               periodo={formattedPeriod}
+              forecast={forecast}
             />
           </div>
         </>

@@ -1,7 +1,12 @@
 import React from 'react';
 
-const PublicContact: React.FC = () => {
-    const whatsappUrl = "https://api.whatsapp.com/send?phone=5579998373234&text=Seu%20seminovo%20está%20aqui,%20fale%20conosco!";
+interface Props {
+    telefone?: string;
+}
+
+const PublicContact: React.FC<Props> = React.memo(({ telefone }) => {
+    const phone = (telefone || '').replace(/\D/g, '');
+    const whatsappUrl = `https://api.whatsapp.com/send?phone=55${phone}&text=Seu%20seminovo%20está%20aqui,%20fale%20conosco!`;
 
     return (
         <section id="contato" className="relative w-full min-h-[600px] bg-[#001d3d] overflow-hidden flex items-center">
@@ -118,6 +123,8 @@ const PublicContact: React.FC = () => {
             </div>
         </section>
     );
-};
+});
+
+PublicContact.displayName = 'PublicContact';
 
 export default PublicContact;

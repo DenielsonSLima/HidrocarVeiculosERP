@@ -46,7 +46,13 @@ const EstoqueTemplate: React.FC<Props> = ({ empresa, watermark, data }) => {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {(data.items || []).map((item: any, i: number) => (
+              {(data.items || []).length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="px-4 py-12 text-center text-slate-400 font-bold text-xs uppercase tracking-widest">
+                    Nenhum veículo encontrado no estoque
+                  </td>
+                </tr>
+              ) : (data.items || []).map((item: any, i: number) => (
                 <tr key={i}>
                   <td className="px-4 py-3 font-mono font-black">{item.placa}</td>
                   <td className="px-4 py-3 font-bold uppercase">{item.modelo} {item.versao}</td>

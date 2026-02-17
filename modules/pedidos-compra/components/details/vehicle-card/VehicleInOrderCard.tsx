@@ -38,7 +38,7 @@ const VehicleInOrderCard: React.FC<Props> = ({ veiculo, pedidoId, isConcluido, o
 
   const handleEdit = (e: React.MouseEvent) => {
     e.stopPropagation();
-    navigate(`/pedidos-compra/${pedidoId}/veiculo/${veiculo.id}`);
+    navigate(`/pedidos-compra/${pedidoId}/veiculo/editar/${veiculo.id}`);
   };
 
   const handleViewDetails = () => {
@@ -47,11 +47,11 @@ const VehicleInOrderCard: React.FC<Props> = ({ veiculo, pedidoId, isConcluido, o
 
   return (
     <div className="bg-white rounded-[2.5rem] border border-slate-200 shadow-sm relative overflow-hidden transition-all duration-500 hover:shadow-xl hover:border-indigo-300 group animate-in slide-in-from-bottom-4">
-      
+
       {/* Barra de Ações Flutuante */}
       <div className="absolute top-6 right-6 z-20 flex space-x-2 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-x-2 group-hover:translate-x-0">
         {!isConcluido && (
-          <button 
+          <button
             onClick={handleEdit}
             className="p-3 bg-white border border-slate-200 text-indigo-500 rounded-2xl hover:bg-indigo-600 hover:text-white transition-all shadow-lg active:scale-95"
             title="Editar Ficha Técnica"
@@ -61,9 +61,9 @@ const VehicleInOrderCard: React.FC<Props> = ({ veiculo, pedidoId, isConcluido, o
             </svg>
           </button>
         )}
-        
+
         {!isConcluido && (
-          <button 
+          <button
             onClick={(e) => { e.stopPropagation(); onUnlink(veiculo.id); }}
             className="p-3 bg-white border border-slate-200 text-rose-500 rounded-2xl hover:bg-rose-500 hover:text-white transition-all shadow-lg active:scale-95"
             title="Remover do Pedido"
@@ -76,18 +76,18 @@ const VehicleInOrderCard: React.FC<Props> = ({ veiculo, pedidoId, isConcluido, o
       </div>
 
       {/* Grid Principal Layout Horizontal - Proporção 35% / 65% */}
-      <div 
+      <div
         onClick={handleViewDetails}
         className="grid grid-cols-1 lg:grid-cols-[380px_1fr] items-stretch cursor-pointer min-h-[400px]"
       >
-        <VehicleMediaColumn 
-          veiculo={veiculo} 
-          allCaracteristicas={car} 
-          allOpcionais={op} 
+        <VehicleMediaColumn
+          veiculo={veiculo}
+          allCaracteristicas={car}
+          allOpcionais={op}
         />
 
-        <VehicleDataColumn 
-          veiculo={veiculo} 
+        <VehicleDataColumn
+          veiculo={veiculo}
         />
       </div>
     </div>

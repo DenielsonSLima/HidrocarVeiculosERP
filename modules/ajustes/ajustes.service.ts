@@ -13,11 +13,11 @@ export const AjustesCentralService = {
     try {
       const key = this.getStorageKey(table);
       const cachedData = localStorage.getItem(key);
-      
+
       if (cachedData) {
         return JSON.parse(cachedData);
       }
-      
+
       return null;
     } catch (error) {
       console.error(`Erro ao buscar configurações locais (${table}):`, error);
@@ -28,16 +28,16 @@ export const AjustesCentralService = {
   async updateSettings(table: string, payload: any) {
     try {
       const key = this.getStorageKey(table);
-      const dataToSave = { 
-        ...payload, 
-        updated_at: new Date().toISOString() 
+      const dataToSave = {
+        ...payload,
+        updated_at: new Date().toISOString()
       };
-      
+
       localStorage.setItem(key, JSON.stringify(dataToSave));
-      
+
       // Registra o evento no log local
       await this.logEvent(`UPDATE_${table.toUpperCase()}`, { success: true });
-      
+
       return dataToSave;
     } catch (error) {
       console.error(`Erro ao salvar configurações locais (${table}):`, error);
@@ -49,14 +49,14 @@ export const AjustesCentralService = {
     try {
       const logsKey = 'nexus_erp_system_logs';
       const existingLogs = JSON.parse(localStorage.getItem(logsKey) || '[]');
-      
+
       const newLog = {
-        id: crypto.randomUUID(),
+        id: Math.random().toString(36).substring(2, 15) + Date.now().toString(36),
         event,
         details,
         created_at: new Date().toISOString()
       };
-      
+
       localStorage.setItem(logsKey, JSON.stringify([newLog, ...existingLogs].slice(0, 100)));
     } catch (error) {
       console.error('Erro ao registrar log local:', error);

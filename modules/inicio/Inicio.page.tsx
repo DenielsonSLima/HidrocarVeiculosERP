@@ -17,8 +17,8 @@ const InicioPage: React.FC = () => {
   useEffect(() => {
     async function load() {
       // Pequeno delay artificial para garantir transição suave se o banco for instantâneo
-      const minDelay = new Promise(resolve => setTimeout(resolve, 300));
-      
+      const minDelay = new Promise(resolve => setTimeout(resolve, 800));
+
       try {
         const [s, r] = await Promise.all([
           InicioService.getDashboardStats(),
@@ -37,17 +37,17 @@ const InicioPage: React.FC = () => {
   }, []);
 
   if (loading) return (
-    <div className="flex flex-col items-center justify-center py-40 animate-in fade-in duration-500">
-       <div className="relative w-16 h-16">
-          <div className="absolute inset-0 border-4 border-indigo-600/20 rounded-full"></div>
-          <div className="absolute inset-0 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
-       </div>
-       <p className="mt-6 text-slate-400 font-black uppercase text-[10px] tracking-[0.3em] animate-pulse">Sincronizando Nexus Core...</p>
+    <div className="min-h-screen flex flex-col items-center justify-center -mt-20">
+      <div className="relative w-24 h-24">
+        <div className="absolute inset-0 border-4 border-indigo-100 rounded-full"></div>
+        <div className="absolute inset-0 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+      </div>
+      <p className="mt-8 text-slate-400 font-bold uppercase text-[10px] tracking-[0.3em] animate-pulse">Sincronizando Nexus Core...</p>
     </div>
   );
 
   return (
-    <div className="space-y-8 pb-20 animate-in fade-in slide-in-from-bottom-2 duration-700">
+    <div className="space-y-6 pb-20 max-w-[1600px] mx-auto animate-in fade-in slide-in-from-bottom-4 duration-700">
       {/* 1. Card Identificação no Topo */}
       <WelcomeHeader />
 
@@ -55,16 +55,16 @@ const InicioPage: React.FC = () => {
       {stats && <GeneralKpis stats={stats} />}
 
       {/* 3. Grid de Conteúdo */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
-        
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch h-full">
+
         {/* Lado Esquerdo: Atividade Recente */}
-        <div className="lg:col-span-8">
-           <RecentStockMini veiculos={recent} />
+        <div className="lg:col-span-8 min-h-[400px]">
+          <RecentStockMini veiculos={recent} />
         </div>
 
         {/* Lado Direito: Atalhos de Sistema */}
-        <div className="lg:col-span-4">
-           <QuickShortcuts />
+        <div className="lg:col-span-4 min-h-[400px]">
+          <QuickShortcuts />
         </div>
 
       </div>

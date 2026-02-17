@@ -20,7 +20,8 @@ export const PedidosVendaService = {
         veiculo:est_veiculos(
           id,
           valor_custo,
-          valor_custo,
+          valor_custo_servicos,
+          valor_venda,
           placa,
           fotos,
           socios,
@@ -67,7 +68,7 @@ export const PedidosVendaService = {
         id,
         valor_venda,
         status,
-        veiculo:est_veiculos(valor_custo)
+        veiculo:est_veiculos(valor_custo, valor_custo_servicos, valor_venda)
       `);
 
     // Mesma lógica de filtros
@@ -104,7 +105,8 @@ export const PedidosVendaService = {
           montadora:cad_montadoras(*), 
           modelo:cad_modelos(*), 
           versao:cad_versoes(*),
-          pedido_compra:cmp_pedidos(id, forma_pagamento:cad_formas_pagamento(id, nome))
+          tipo_veiculo:cad_tipos_veiculos(*),
+          pedido_compra:cmp_pedidos!est_veiculos_pedido_id_fkey(id, forma_pagamento:cad_formas_pagamento(id, nome))
         ),
         forma_pagamento:cad_formas_pagamento(*),
         pagamentos:venda_pedidos_pagamentos(
@@ -117,7 +119,11 @@ export const PedidosVendaService = {
       .eq('id', id)
       .single();
 
-    if (error) return null;
+    if (error) {
+      console.error('Erro ao buscar pedido de venda:', error);
+      throw error;
+    }
+
     return data as IPedidoVenda;
   },
 
@@ -160,13 +166,13 @@ export const PedidosVendaService = {
     const isConsignacao = pedido.forma_pagamento?.nome?.toLowerCase().includes('consignação') ||
       pedido.forma_pagamento?.nome?.toLowerCase().includes('consignacao');
 
+    // 1. Processar Financeiro
     await FinanceiroAutomationService.processarFinanceiroPedido({
       tipo: 'RECEBER',
       pedidoId: pedido.id,
       parceiroId: pedido.cliente_id,
       formaPagamento: pedido.forma_pagamento!,
       condicao: condicao,
-      // Mesmo em consignação, o valor do pedido de venda é a comissão a receber
       valorTotal: pedido.valor_venda,
       descricao: isConsignacao
         ? `COMISSÃO CONSIGNAÇÃO: ${pedido.numero_venda || pedido.id.substring(0, 8)}`
@@ -174,14 +180,46 @@ export const PedidosVendaService = {
       contaBancariaId
     });
 
-    await supabase.from(TABLE).update({ status: 'CONCLUIDO', updated_at: new Date().toISOString() }).eq('id', pedido.id);
-
-    if (pedido.veiculo_id) {
-      await supabase.from('est_veiculos').update({
-        status: 'VENDIDO',
-        publicado_site: false,
+    // 2. Atualizar Status do Pedido
+    const { error: errorPedido } = await supabase
+      .from(TABLE)
+      .update({
+        status: 'CONCLUIDO',
         updated_at: new Date().toISOString()
-      }).eq('id', pedido.veiculo_id);
+      })
+      .eq('id', pedido.id);
+
+    if (errorPedido) throw new Error(`Erro ao atualizar pedido: ${errorPedido.message}`);
+
+    // 3. Atualizar Status do Veículo
+    // Fallback: se veiculo_id não veio no objeto, buscar diretamente no banco
+    let veiculoIdFinal = pedido.veiculo_id;
+    if (!veiculoIdFinal) {
+      const { data: pedidoDB } = await supabase
+        .from(TABLE)
+        .select('veiculo_id')
+        .eq('id', pedido.id)
+        .single();
+      veiculoIdFinal = pedidoDB?.veiculo_id;
+    }
+
+    if (veiculoIdFinal) {
+      console.log('Finalizando venda do veículo:', veiculoIdFinal);
+      const { error: errorVeiculo } = await supabase
+        .from('est_veiculos')
+        .update({
+          status: 'VENDIDO',
+          publicado_site: false,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', veiculoIdFinal);
+
+      if (errorVeiculo) {
+        console.error('Erro ao atualizar veículo na finalização:', errorVeiculo);
+        throw new Error(`Erro ao atualizar veículo: ${errorVeiculo.message}`);
+      }
+    } else {
+      console.warn('ATENÇÃO: Venda concluída sem veículo vinculado. Pedido:', pedido.id);
     }
   },
 

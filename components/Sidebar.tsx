@@ -68,22 +68,15 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen }) => {
   const handleLogout = async () => {
     setIsLoggingOut(true);
     try {
-      // 1. Redireciona para a raiz pública ANTES de deslogar
-      // Isso evita que o App.tsx detecte a perda de sessão estando em uma rota interna 
-      // e force o redirecionamento para /login
-      window.location.hash = '/';
-
-      // 2. Realiza o sign out no Supabase
+      // 1. Realiza o sign out no Supabase
       await AuthService.signOut();
 
-      // 3. Força um reload para limpar todos os estados de memória e caches de autenticação
-      // O navegador recarregará na URL '#' que mapeia para o Site Público
-      window.location.reload();
+      // 2. Redireciona para a raiz pública e recarrega para limpar estados
+      window.location.href = '/';
     } catch (err) {
       console.error('Erro ao sair:', err);
       // Fallback radical para garantir a saída
-      window.location.href = '#/';
-      window.location.reload();
+      window.location.href = '/';
     } finally {
       setIsLoggingOut(false);
       setShowLogoutConfirm(false);

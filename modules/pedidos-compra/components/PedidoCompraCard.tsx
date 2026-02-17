@@ -12,8 +12,9 @@ const PedidoCompraCard: React.FC<Props> = ({ pedido, onClick }) => {
 
   const veiculos = pedido.veiculos || [];
   const hasVeiculos = veiculos.length > 0;
-  const currentVeiculo = hasVeiculos ? veiculos[activeVehicleIndex] : null;
+  const currentVeiculo = hasVeiculos ? veiculos[Math.min(activeVehicleIndex, veiculos.length - 1)] : null;
   const v = currentVeiculo as any;
+  const todosVendidos = hasVeiculos && veiculos.every((v: any) => v.status === 'VENDIDO');
   const capaUrl = v?.fotos?.find((f: any) => f.is_capa)?.url || v?.fotos?.[0]?.url;
 
   const formatCurrency = (val: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
@@ -82,7 +83,7 @@ const PedidoCompraCard: React.FC<Props> = ({ pedido, onClick }) => {
 
             <div className="absolute bottom-4 right-4">
               <span className="bg-black/60 backdrop-blur-md px-2.5 py-1 rounded-lg text-[9px] font-black text-white uppercase tracking-widest border border-white/10">
-                {activeVehicleIndex + 1} de {veiculos.length} Ativos
+                {activeVehicleIndex + 1} de {veiculos.length} {todosVendidos ? 'Vendidos' : 'Ativos'}
               </span>
             </div>
           </>
@@ -94,13 +95,18 @@ const PedidoCompraCard: React.FC<Props> = ({ pedido, onClick }) => {
         )}
 
         {/* Status Badge - AJUSTADO PARA MÁXIMA VISIBILIDADE */}
-        <div className="absolute top-4 right-4">
+        <div className="absolute top-4 right-4 flex flex-col gap-1.5 items-end">
           <span className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-xl border-2 ${pedido.status === 'CONCLUIDO'
               ? 'bg-emerald-600 text-white border-emerald-500'
               : 'bg-amber-500 text-white border-amber-400 animate-pulse'
             }`}>
             {pedido.status}
           </span>
+          {todosVendidos && (
+            <span className="px-3 py-1 rounded-xl text-[9px] font-black uppercase tracking-widest shadow-lg border-2 bg-rose-500 text-white border-rose-400">
+              Veículo Vendido
+            </span>
+          )}
         </div>
       </div>
 

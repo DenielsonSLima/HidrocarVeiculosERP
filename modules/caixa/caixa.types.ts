@@ -22,6 +22,7 @@ export interface ICaixaDashboardData {
   patrimonio_liquido: number;
   saldo_disponivel: number;
   total_ativos_estoque: number;
+  total_recebiveis: number;
   total_passivo_circulante: number;
 
   // Detalhamento
@@ -33,6 +34,15 @@ export interface ICaixaDashboardData {
   total_compras: number;
   total_vendas: number;
   lucro_mensal: number;
+}
+
+export interface IForecastMes {
+  mes: string; // ex: 'Mar/2026'
+  mesNum: number;
+  ano: number;
+  contas_pagar: number;
+  contas_receber: number;
+  lucro_projetado: number; // receber - pagar
 }
 
 export type CaixaTab = 'MES_ATUAL' | 'ANTERIORES';

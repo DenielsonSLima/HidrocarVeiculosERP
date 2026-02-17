@@ -1,38 +1,35 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { IVeiculo } from '../estoque/estoque.types';
-import { EstoqueService } from '../estoque/estoque.service';
-import { CaracteristicasService } from '../cadastros/caracteristicas/caracteristicas.service';
-import { OpcionaisService } from '../cadastros/opcionais/opcionais.service';
-import { CoresService } from '../cadastros/cores/cores.service';
-import { ICaracteristica } from '../cadastros/caracteristicas/caracteristicas.types';
-import { IOpcional } from '../cadastros/opcionais/opcionais.types';
-import { ICor } from '../cadastros/cores/cores.types';
-import { EmpresaService } from '../ajustes/empresa/empresa.service';
+import { SitePublicoService } from './site-publico.service';
+import { IVeiculoPublic } from './site-publico.types';
 import { IEmpresa } from '../ajustes/empresa/empresa.types';
+import { formatCurrency } from './utils/currency';
 
-// Componentes
 import PublicNavbar from './components/PublicNavbar';
 import PublicFooter from './components/PublicFooter';
 import VehicleDetailsSkeleton from './components/VehicleDetailsSkeleton';
+import { setSEO, setVehicleJsonLd, removeJsonLd } from './utils/seo';
 
 const PublicVehicleDetailsPage: React.FC = () => {
   const navigate = useNavigate();
   const { id } = useParams();
 
-  const [veiculo, setVeiculo] = useState<IVeiculo | null>(null);
+  const [veiculo, setVeiculo] = useState<IVeiculoPublic | null>(null);
   const [empresa, setEmpresa] = useState<IEmpresa | null>(null);
   const [loading, setLoading] = useState(true);
-  const [allCaracteristicas, setAllCaracteristicas] = useState<ICaracteristica[]>([]);
-  const [allOpcionais, setAllOpcionais] = useState<IOpcional[]>([]);
-  const [cores, setCores] = useState<ICor[]>([]);
+  const [allCaracteristicas, setAllCaracteristicas] = useState<{ id: string; nome: string }[]>([]);
+  const [allOpcionais, setAllOpcionais] = useState<{ id: string; nome: string }[]>([]);
+  const [cores, setCores] = useState<{ id: string; nome: string; rgb_hex: string }[]>([]);
   const [activePhoto, setActivePhoto] = useState<string | null>(null);
   const [activePhotoIndex, setActivePhotoIndex] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
 
-  const sortedPhotos = veiculo?.fotos ? [...veiculo.fotos].sort((a, b) => (a.is_capa === b.is_capa ? 0 : a.is_capa ? -1 : 1)) : [];
+  const sortedPhotos = useMemo(
+    () => veiculo?.fotos ? [...veiculo.fotos].sort((a, b) => (a.is_capa === b.is_capa ? 0 : a.is_capa ? -1 : 1)) : [],
+    [veiculo?.fotos]
+  );
 
   // Auto-play Effect
   useEffect(() => {
@@ -55,15 +52,9 @@ const PublicVehicleDetailsPage: React.FC = () => {
       if (!id) return;
       setLoading(true);
       try {
-        const [vData, carData, opData, coresData, empData] = await Promise.all([
-          EstoqueService.getById(id),
-          CaracteristicasService.getAll(),
-          OpcionaisService.getAll(),
-          CoresService.getAll(),
-          EmpresaService.getDadosEmpresa()
-        ]);
+        const { veiculo: vData, caracteristicas: carData, opcionais: opData, cores: coresData, empresa: empData } = await SitePublicoService.getVeiculoDetails(id);
 
-        if (!vData || vData.status !== 'DISPONIVEL') {
+        if (!vData) {
           navigate('/');
           return;
         }
@@ -74,9 +65,38 @@ const PublicVehicleDetailsPage: React.FC = () => {
         setCores(coresData);
         setEmpresa(empData);
 
-        const sortedPhotos = [...(vData.fotos || [])].sort((a, b) => (a.is_capa === b.is_capa ? 0 : a.is_capa ? -1 : 1));
-        if (sortedPhotos.length > 0) {
-          setActivePhoto(sortedPhotos[0].url);
+        // SEO: Define título e meta tags dinâmicos com dados do veículo
+        const veiculoTitle = `${vData.montadora?.nome || ''} ${vData.modelo?.nome || ''} ${vData.ano_modelo}`;
+        const initialPhotos = [...(vData.fotos || [])].sort((a, b) => (a.is_capa === b.is_capa ? 0 : a.is_capa ? -1 : 1));
+        const coverPhoto = initialPhotos.length > 0 ? initialPhotos[0].url : undefined;
+        const veiculoUrl = `${window.location.origin}/veiculo/${id}`;
+
+        setSEO({
+          title: `${veiculoTitle} | Hidrocar Veículos`,
+          description: `${veiculoTitle} - ${vData.km?.toLocaleString('pt-BR')} KM, ${vData.combustivel}, ${vData.transmissao}. Confira na Hidrocar Veículos em Aracaju/SE.`,
+          image: coverPhoto,
+          url: veiculoUrl
+        });
+
+        // JSON-LD: Dados estruturados do veículo para Google Rich Snippets
+        setVehicleJsonLd({
+          name: veiculoTitle.trim(),
+          brand: vData.montadora?.nome || '',
+          model: vData.modelo?.nome || '',
+          year: vData.ano_modelo,
+          mileage: vData.km || 0,
+          fuelType: vData.combustivel || '',
+          transmission: vData.transmissao || '',
+          price: vData.valor_venda || 0,
+          image: coverPhoto,
+          url: veiculoUrl,
+          description: `${veiculoTitle} - ${vData.km?.toLocaleString('pt-BR')} KM, ${vData.combustivel}, ${vData.transmissao}.`,
+          sellerName: 'Hidrocar Veículos',
+          sellerPhone: empData?.telefone,
+        });
+
+        if (initialPhotos.length > 0) {
+          setActivePhoto(initialPhotos[0].url);
           setActivePhotoIndex(0);
         }
 
@@ -89,35 +109,48 @@ const PublicVehicleDetailsPage: React.FC = () => {
     }
     loadData();
     window.scrollTo(0, 0);
+
+    return () => {
+      removeJsonLd();
+    };
   }, [id, navigate]);
 
-  const handleNextPhoto = (e?: React.MouseEvent) => {
+  const handleNextPhoto = useCallback((e?: React.MouseEvent) => {
     e?.stopPropagation();
-    const nextIndex = (activePhotoIndex + 1) % sortedPhotos.length;
-    setActivePhotoIndex(nextIndex);
-    setActivePhoto(sortedPhotos[nextIndex].url);
-  };
+    setActivePhotoIndex(prev => {
+      const nextIndex = (prev + 1) % sortedPhotos.length;
+      setActivePhoto(sortedPhotos[nextIndex].url);
+      return nextIndex;
+    });
+  }, [sortedPhotos]);
 
-  const handlePrevPhoto = (e?: React.MouseEvent) => {
+  const handlePrevPhoto = useCallback((e?: React.MouseEvent) => {
     e?.stopPropagation();
-    const prevIndex = (activePhotoIndex - 1 + sortedPhotos.length) % sortedPhotos.length;
-    setActivePhotoIndex(prevIndex);
-    setActivePhoto(sortedPhotos[prevIndex].url);
-  };
+    setActivePhotoIndex(prev => {
+      const prevIndex = (prev - 1 + sortedPhotos.length) % sortedPhotos.length;
+      setActivePhoto(sortedPhotos[prevIndex].url);
+      return prevIndex;
+    });
+  }, [sortedPhotos]);
 
-  const formatCurrency = (val: number) => new Intl.NumberFormat('pt-BR', {
-    style: 'currency',
-    currency: 'BRL',
-    maximumFractionDigits: 0
-  }).format(val);
+  // Navegação por teclado no lightbox (setas e Esc)
+  useEffect(() => {
+    if (!isFullscreen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setIsFullscreen(false);
+      if (e.key === 'ArrowRight') handleNextPhoto();
+      if (e.key === 'ArrowLeft') handlePrevPhoto();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isFullscreen, handleNextPhoto, handlePrevPhoto]);
 
-  const handleWhatsApp = () => {
+  const handleWhatsApp = useCallback(() => {
     if (!veiculo || !empresa) return;
     const phone = (empresa.telefone || '').replace(/\D/g, '');
-    const v = veiculo as any;
-    const message = encodeURIComponent(`Olá! Gostaria de mais informações sobre o ${v.montadora?.nome} ${v.modelo?.nome} (${veiculo.ano_modelo}) que vi no site.`);
+    const message = encodeURIComponent(`Olá! Gostaria de mais informações sobre o ${veiculo.montadora?.nome} ${veiculo.modelo?.nome} (${veiculo.ano_modelo}) que vi no site.`);
     window.open(`https://wa.me/55${phone}?text=${message}`, '_blank');
-  };
+  }, [veiculo, empresa]);
 
   if (!veiculo && !loading) {
     return (
@@ -127,10 +160,19 @@ const PublicVehicleDetailsPage: React.FC = () => {
     );
   }
 
-  const v = veiculo as any || {};
-  const tagsCar = veiculo ? allCaracteristicas.filter(c => veiculo.caracteristicas_ids?.includes(c.id)) : [];
-  const tagsOp = veiculo ? allOpcionais.filter(o => veiculo.opcionais_ids?.includes(o.id)) : [];
-  const corObj = veiculo ? cores.find(c => c.id === veiculo.cor_id) : undefined;
+  const v = veiculo || {} as IVeiculoPublic;
+  const tagsCar = useMemo(
+    () => veiculo ? allCaracteristicas.filter(c => veiculo.caracteristicas_ids?.includes(c.id)) : [],
+    [veiculo, allCaracteristicas]
+  );
+  const tagsOp = useMemo(
+    () => veiculo ? allOpcionais.filter(o => veiculo.opcionais_ids?.includes(o.id)) : [],
+    [veiculo, allOpcionais]
+  );
+  const corObj = useMemo(
+    () => veiculo ? cores.find(c => c.id === veiculo.cor_id) : undefined,
+    [veiculo, cores]
+  );
 
   // Se estiver carregando, mostramos o esqueleto mas JÁ COM navbar
   const content = loading ? <VehicleDetailsSkeleton /> : (
@@ -172,7 +214,7 @@ const PublicVehicleDetailsPage: React.FC = () => {
                     <img
                       src={activePhoto}
                       className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                      alt="Veículo"
+                      alt={veiculo ? `${veiculo.montadora?.nome || ''} ${veiculo.modelo?.nome || ''} ${veiculo.ano_modelo || ''}`.trim() : 'Veículo'}
                       loading="lazy"
                       decoding="async"
                     />
@@ -185,12 +227,14 @@ const PublicVehicleDetailsPage: React.FC = () => {
                     <>
                       <button
                         onClick={handlePrevPhoto}
+                        aria-label="Foto anterior"
                         className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 bg-black/20 backdrop-blur-md text-white rounded-full flex items-center justify-center hover:bg-white hover:text-[#004691] transition-all opacity-0 group-hover:opacity-100 z-20"
                       >
                         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path d="M15 19l-7-7 7-7" /></svg>
                       </button>
                       <button
                         onClick={handleNextPhoto}
+                        aria-label="Próxima foto"
                         className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 bg-black/20 backdrop-blur-md text-white rounded-full flex items-center justify-center hover:bg-white hover:text-[#004691] transition-all opacity-0 group-hover:opacity-100 z-20"
                       >
                         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path d="M9 5l7 7-7 7" /></svg>
@@ -214,7 +258,7 @@ const PublicVehicleDetailsPage: React.FC = () => {
                       className={`relative w-24 h-[60px] rounded-xl overflow-hidden border-2 transition-all snap-start shrink-0 ${activePhoto === foto.url ? 'border-[#004691] shadow-lg scale-105 z-10' : 'border-white opacity-40 hover:opacity-100'
                         }`}
                     >
-                      <img src={foto.url} className="w-full h-full object-cover" alt={`Thumb ${index}`} loading="lazy" decoding="async" />
+                      <img src={foto.url} className="w-full h-full object-cover" alt={`${veiculo?.montadora?.nome || ''} ${veiculo?.modelo?.nome || ''} - Foto ${index + 1}`} loading="lazy" decoding="async" />
                     </button>
                   ))}
                 </div>
@@ -284,7 +328,7 @@ const PublicVehicleDetailsPage: React.FC = () => {
           className="fixed inset-0 z-[200] bg-slate-950/98 backdrop-blur-xl flex flex-col items-center justify-center p-4 md:p-10 animate-in fade-in duration-300"
           onClick={() => setIsFullscreen(false)}
         >
-          <button className="absolute top-10 right-10 text-white/50 hover:text-white transition-all transform hover:scale-110">
+          <button aria-label="Fechar visualização" className="absolute top-10 right-10 text-white/50 hover:text-white transition-all transform hover:scale-110">
             <svg className="w-12 h-12" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path d="M6 18L18 6M6 6l12 12" /></svg>
           </button>
 
@@ -292,6 +336,7 @@ const PublicVehicleDetailsPage: React.FC = () => {
             {sortedPhotos.length > 1 && (
               <button
                 onClick={handlePrevPhoto}
+                aria-label="Foto anterior"
                 className="absolute -left-20 top-1/2 -translate-y-1/2 hidden xl:flex w-16 h-16 bg-white/10 text-white rounded-full items-center justify-center hover:bg-white hover:text-slate-900 transition-all shadow-2xl"
               >
                 <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path d="M15 19l-7-7 7-7" /></svg>
@@ -301,13 +346,14 @@ const PublicVehicleDetailsPage: React.FC = () => {
             <img
               src={activePhoto}
               className="max-w-full max-h-[80vh] object-contain rounded-2xl shadow-[0_0_80px_rgba(0,0,0,0.5)] animate-in zoom-in-95 duration-500"
-              alt="Fullscreen View"
+              alt={veiculo ? `${veiculo.montadora?.nome || ''} ${veiculo.modelo?.nome || ''} - Visualização ampliada` : 'Visualização ampliada'}
               onClick={(e) => e.stopPropagation()}
             />
 
             {sortedPhotos.length > 1 && (
               <button
                 onClick={handleNextPhoto}
+                aria-label="Próxima foto"
                 className="absolute -right-20 top-1/2 -translate-y-1/2 hidden xl:flex w-16 h-16 bg-white/10 text-white rounded-full items-center justify-center hover:bg-white hover:text-slate-900 transition-all shadow-2xl"
               >
                 <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path d="M9 5l7 7-7 7" /></svg>
@@ -401,11 +447,11 @@ const PublicVehicleDetailsPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 font-['Inter'] antialiased">
-      <PublicNavbar empresa={empresa || {} as any} />
+      <PublicNavbar empresa={empresa || {} as IEmpresa} />
 
       {content}
 
-      <PublicFooter empresa={empresa || {} as any} />
+      <PublicFooter empresa={empresa || {} as IEmpresa} />
     </div>
   );
 };

@@ -20,13 +20,13 @@ export const VersoesService = {
   },
 
   async checkDuplicate(
-    modeloId: string, 
-    nome: string, 
-    motorizacao: string, 
-    combustivel: string, 
-    transmissao: string, 
-    anoModelo: number, 
-    anoFabricacao: number, 
+    modeloId: string,
+    nome: string,
+    motorizacao: string,
+    combustivel: string,
+    transmissao: string,
+    anoModelo: number,
+    anoFabricacao: number,
     excludeId?: string
   ): Promise<boolean> {
     let query = supabase
@@ -39,9 +39,9 @@ export const VersoesService = {
       .eq('transmissao', transmissao)
       .eq('ano_modelo', anoModelo)
       .eq('ano_fabricacao', anoFabricacao);
-    
+
     if (excludeId) {
-      query = query.ne('id', excludeId);
+      query = query.neq('id', excludeId);
     }
 
     const { count } = await query;
@@ -51,8 +51,8 @@ export const VersoesService = {
   async save(payload: Partial<IVersao>): Promise<IVersao> {
     // Validação de duplicidade refinada com todos os critérios técnicos
     const isDup = await this.checkDuplicate(
-      payload.modelo_id!, 
-      payload.nome!, 
+      payload.modelo_id!,
+      payload.nome!,
       payload.motorizacao!,
       payload.combustivel!,
       payload.transmissao!,

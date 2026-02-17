@@ -22,10 +22,10 @@ import VehicleQuickInfoCard from '../estoque/components/details/VehicleQuickInfo
 const VendaVeiculoDetalhesPage: React.FC = () => {
   const navigate = useNavigate();
   const { id, veiculoId } = useParams(); // id é o ID do pedido de venda
-  
+
   const [veiculo, setVeiculo] = useState<IVeiculo | null>(null);
   const [loading, setLoading] = useState(true);
-  
+
   // Dados auxiliares
   const [allCaracteristicas, setAllCaracteristicas] = useState<ICaracteristica[]>([]);
   const [allOpcionais, setAllOpcionais] = useState<IOpcional[]>([]);
@@ -45,7 +45,7 @@ const VendaVeiculoDetalhesPage: React.FC = () => {
         OpcionaisService.getAll(),
         CoresService.getAll()
       ]);
-      
+
       setVeiculo(vData);
       setAllCaracteristicas(carData);
       setAllOpcionais(opData);
@@ -68,14 +68,14 @@ const VendaVeiculoDetalhesPage: React.FC = () => {
     navigate(`/estoque/editar/${veiculoId}`);
   };
 
-  const handleAddExpense = async (expense: Partial<IVeiculoDespesa>) => {
+  const handleAddExpense = async (expenses: Partial<IVeiculoDespesa>[]) => {
     // Lógica de despesa - Reuso de padrão
     alert('Funcionalidade de lançamento direto no pedido de venda em desenvolvimento.');
   };
 
   const handleDeleteExpense = async (expenseId: string) => {
     if (confirm('Deseja remover este lançamento?')) {
-       // Lógica delete
+      // Lógica delete
     }
   };
 
@@ -89,23 +89,23 @@ const VendaVeiculoDetalhesPage: React.FC = () => {
 
   return (
     <div className="pb-20 animate-in fade-in duration-500 max-w-screen-2xl mx-auto px-4 md:px-8">
-      
-      <HeaderDetails 
-        veiculo={veiculo} 
-        onBack={handleBack} 
-        onEdit={handleEdit} 
+
+      <HeaderDetails
+        veiculo={veiculo}
+        onBack={handleBack}
+        onEdit={handleEdit}
       />
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start mb-10">
-        
+
         {/* COLUNA ESQUERDA - Identificação, Mídia e Features */}
         <div className="lg:col-span-7 space-y-6">
           <VehicleQuickInfoCard veiculo={veiculo} />
           <GalleryCard fotos={veiculo.fotos || []} />
-          <FeaturesCard 
-            veiculo={veiculo} 
-            allCaracteristicas={allCaracteristicas} 
-            allOpcionais={allOpcionais} 
+          <FeaturesCard
+            veiculo={veiculo}
+            allCaracteristicas={allCaracteristicas}
+            allOpcionais={allOpcionais}
           />
         </div>
 
@@ -118,11 +118,11 @@ const VendaVeiculoDetalhesPage: React.FC = () => {
 
       {/* Card de Despesas - Full Width */}
       <div className="w-full">
-         <VehicleExpensesCard 
-            veiculo={veiculo}
-            onAddExpense={handleAddExpense}
-            onDeleteExpense={handleDeleteExpense}
-         />
+        <VehicleExpensesCard
+          veiculo={veiculo}
+          onAddExpense={handleAddExpense}
+          onDeleteExpense={handleDeleteExpense}
+        />
       </div>
     </div>
   );

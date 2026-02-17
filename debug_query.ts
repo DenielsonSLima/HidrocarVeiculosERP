@@ -10,7 +10,7 @@ const supabase = createClient(supabaseUrl, supabaseAnonKey);
 async function testQuery() {
     console.log("Testing query...");
 
-    const aba = 'EFETIVADOS';
+    const aba: string = 'EFETIVADOS';
     const filtros = {
         dataInicio: '2026-02-01',
         dataFim: '2026-02-28',

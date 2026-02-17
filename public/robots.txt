@@ -1,0 +1,26 @@
+# Robots.txt - Hidrocar Veículos
+# Permite que buscadores indexem o site público
+# Bloqueia áreas administrativas do ERP
+
+User-agent: *
+Allow: /
+Allow: /estoque-publico
+Allow: /veiculo/
+
+# Bloqueia rotas internas do ERP
+Disallow: /login
+Disallow: /inicio
+Disallow: /parceiros
+Disallow: /cadastros
+Disallow: /estoque
+Disallow: /pedidos-compra
+Disallow: /pedidos-venda
+Disallow: /caixa
+Disallow: /financeiro
+Disallow: /performance
+Disallow: /relatorios
+Disallow: /editor-site
+Disallow: /ajustes
+
+# Sitemap (descomente quando disponível)
+# Sitemap: https://www.hidrocarveiculos.com.br/sitemap.xml

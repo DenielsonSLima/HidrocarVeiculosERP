@@ -78,7 +78,20 @@ export const FinanceiroAutomationService = {
       categoriaId = await this.ensureCategory('AQUISIÇÃO DE VEÍCULOS', 'VARIAVEL', 'SAIDA'); // Despesa Variável
     }
 
+    // 1.1 Idempotência: Remove lançamentos anteriores PENDENTES deste pedido para evitar duplicidade
+    const { error: errDel } = await supabase
+      .from('fin_titulos')
+      .delete()
+      .eq('pedido_id', pedidoId)
+      .eq('status', 'PENDENTE');
+
+    if (errDel) {
+      console.error('Erro ao limpar lançamentos anteriores:', errDel);
+      // Não interrompe o fluxo, mas loga o erro
+    }
+
     const parcelas = this.gerarCronograma(valorTotal, condicao);
+    const titulosCriados = [];
 
     for (const p of parcelas) {
       const hojeStr = new Date().toISOString().split('T')[0];
@@ -106,6 +119,7 @@ export const FinanceiroAutomationService = {
         .single();
 
       if (errTitulo) throw errTitulo;
+      titulosCriados.push(titulo);
 
       // 3. Se for pagamento imediato (À Vista no Caixa), gera transação e atualiza saldo
       if (isPagamentoImediato && contaBancariaId) {
@@ -120,13 +134,19 @@ export const FinanceiroAutomationService = {
           descricao: `BAIXA AUTOMÁTICA: ${descricao}`
         });
 
-        const { data: conta } = await supabase.from('fin_contas_bancarias').select('saldo_atual').eq('id', contaBancariaId).single();
-        const multiplicador = tipo === 'PAGAR' ? -1 : 1;
-
-        await supabase.from('fin_contas_bancarias').update({
-          saldo_atual: (Number(conta.saldo_atual) + (Number(p.valor) * multiplicador))
-        }).eq('id', contaBancariaId);
+        const { data: conta, error: errConta } = await supabase.from('fin_contas_bancarias').select('saldo_atual').eq('id', contaBancariaId).single();
+        if (errConta || !conta) {
+          console.error('Conta bancária não encontrada para baixa automática:', contaBancariaId);
+        } else {
+          const multiplicador = tipo === 'PAGAR' ? -1 : 1;
+          await supabase.from('fin_contas_bancarias').update({
+            saldo_atual: (Number(conta.saldo_atual) + (Number(p.valor) * multiplicador)),
+            updated_at: new Date().toISOString()
+          }).eq('id', contaBancariaId);
+        }
       }
     }
+
+    return titulosCriados;
   }
 };

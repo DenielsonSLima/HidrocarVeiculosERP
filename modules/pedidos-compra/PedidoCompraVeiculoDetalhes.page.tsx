@@ -62,10 +62,10 @@ const PedidoCompraVeiculoDetalhesPage: React.FC = () => {
   };
 
   const handleEdit = () => {
-    navigate(`/estoque/editar/${veiculoId}`);
+    navigate(`/pedidos-compra/${id}/veiculo/editar/${veiculoId}`);
   };
 
-  const handleAddExpense = async (expense: Partial<IVeiculoDespesa>) => {
+  const handleAddExpense = async (expenses: Partial<IVeiculoDespesa>[]) => {
     alert('Funcionalidade de lançamento direto no pedido de compra em desenvolvimento.');
   };
 

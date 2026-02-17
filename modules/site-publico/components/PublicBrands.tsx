@@ -6,7 +6,7 @@ interface Props {
   montadoras: IMontadoraPublic[];
 }
 
-const PublicBrands: React.FC<Props> = ({ montadoras }) => {
+const PublicBrands: React.FC<Props> = React.memo(({ montadoras }) => {
   const navigate = useNavigate();
 
   if (!montadoras || montadoras.length === 0) return null;
@@ -29,10 +29,10 @@ const PublicBrands: React.FC<Props> = ({ montadoras }) => {
 
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
           {montadoras.map((m) => (
-            <div
+            <button
               key={m.id}
               onClick={() => handleBrandClick(m.id)}
-              className="group bg-white border border-slate-100 rounded-[2.5rem] p-8 flex flex-col items-center justify-center text-center hover:border-indigo-200 hover:shadow-[0_20px_50px_-20px_rgba(0,70,145,0.15)] transition-all duration-500 cursor-pointer relative overflow-hidden active:scale-95"
+              className="group bg-white border border-slate-100 rounded-[2.5rem] p-8 flex flex-col items-center justify-center text-center hover:border-indigo-200 hover:shadow-[0_20px_50px_-20px_rgba(0,70,145,0.15)] transition-all duration-500 cursor-pointer relative overflow-hidden active:scale-95 focus:outline-none focus:ring-4 focus:ring-[#004691]/20"
             >
               {/* Logo sem grayscale e com scale no hover */}
               <div className="h-16 w-full flex items-center justify-center mb-4 transition-transform duration-500 transform group-hover:scale-125">
@@ -50,12 +50,14 @@ const PublicBrands: React.FC<Props> = ({ montadoras }) => {
 
               {/* Glow Effect on Hover */}
               <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/0 via-indigo-500/0 to-indigo-500/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-            </div>
+            </button>
           ))}
         </div>
       </div>
     </section>
   );
-};
+});
+
+PublicBrands.displayName = 'PublicBrands';
 
 export default PublicBrands;

@@ -1,7 +1,16 @@
 import { IVeiculo } from '../estoque/estoque.types';
 import { IEmpresa } from '../ajustes/empresa/empresa.types';
 
-// Fix: Removed 'extends any' from the interface definition as TypeScript doesn't allow extending the 'any' type.
+// ─── Tipo de veículo com relações de join (montadora, modelo, etc.) ───
+export interface IVeiculoRelations {
+  montadora?: { id: string; nome: string; logo_url?: string };
+  modelo?: { nome: string };
+  versao?: { nome: string };
+  tipo_veiculo?: { nome: string };
+}
+
+export type IVeiculoPublic = IVeiculo & IVeiculoRelations;
+
 export interface IMontadoraPublic {
   id: string;
   nome: string;
@@ -11,7 +20,7 @@ export interface IMontadoraPublic {
 
 export interface IPublicPageData {
   empresa: IEmpresa;
-  veiculos: IVeiculo[];
+  veiculos: IVeiculoPublic[];
   montadoras: IMontadoraPublic[];
 }
 
@@ -22,12 +31,12 @@ export interface IGetStockParams {
   minPrice?: number;
   maxPrice?: number;
   search?: string;
-  sort?: 'nome' | 'preco_asc' | 'preco_desc';
+  sort?: 'created_desc' | 'preco_asc' | 'preco_desc';
   includeMontadoras?: boolean;
 }
 
 export interface IPaginatedStock {
-  veiculos: IVeiculo[];
+  veiculos: IVeiculoPublic[];
   total: number;
   page: number;
   pageSize: number;

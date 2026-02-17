@@ -31,7 +31,7 @@ const LazyMap: React.FC<Props> = ({ src, title = "Mapa" }) => {
     return (
         <div
             ref={containerRef}
-            className="w-full h-full bg-slate-100 flex items-center justify-center relative overlow-hidden"
+            className="w-full h-full bg-slate-100 flex items-center justify-center relative overflow-hidden"
         >
             {!isVisible ? (
                 <div className="flex flex-col items-center justify-center text-slate-400 gap-3">

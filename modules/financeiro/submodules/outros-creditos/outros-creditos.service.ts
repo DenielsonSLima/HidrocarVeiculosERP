@@ -35,6 +35,34 @@ export const OutrosCreditosService = {
     return data as any as ITituloCredito[];
   },
 
+  async save(payload: {
+    descricao: string;
+    valor_total: number;
+    data_vencimento: string;
+    categoria_id: string;
+    conta_bancaria_id?: string;
+    parceiro_id?: string;
+    documento_ref?: string;
+    status?: string;
+  }): Promise<void> {
+    const { error } = await supabase.from(TABLE).insert({
+      descricao: payload.descricao,
+      valor_total: payload.valor_total,
+      valor_pago: 0,
+      data_emissao: new Date().toISOString().split('T')[0],
+      data_vencimento: payload.data_vencimento,
+      tipo: 'RECEBER',
+      status: payload.status || 'PENDENTE',
+      categoria_id: payload.categoria_id,
+      conta_bancaria_id: payload.conta_bancaria_id || null,
+      parceiro_id: payload.parceiro_id || null,
+      documento_ref: payload.documento_ref || null,
+      parcela_numero: 1,
+      parcela_total: 1,
+    });
+    if (error) throw error;
+  },
+
   async delete(id: string): Promise<void> {
     const { error } = await supabase.from(TABLE).delete().eq('id', id);
     if (error) throw error;

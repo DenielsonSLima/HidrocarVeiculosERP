@@ -1,6 +1,7 @@
 import React from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { IEmpresa } from '../../ajustes/empresa/empresa.types';
+import { useScrollToSection } from '../hooks/useScrollToSection';
 
 interface Props {
   empresa: IEmpresa;
@@ -8,36 +9,7 @@ interface Props {
 
 const PublicFooter: React.FC<Props> = ({ empresa }) => {
   const navigate = useNavigate();
-
-  const handleScroll = (e: React.MouseEvent<HTMLAnchorElement>, id: string) => {
-    e.preventDefault();
-    const element = document.getElementById(id);
-    const offset = 100; // Ajuste para descer mais um pouco
-
-    if (element) {
-      const elementPosition = element.getBoundingClientRect().top;
-      const offsetPosition = elementPosition + window.pageYOffset - offset;
-
-      window.scrollTo({
-        top: offsetPosition,
-        behavior: "smooth"
-      });
-    } else {
-      navigate('/');
-      setTimeout(() => {
-        const el = document.getElementById(id);
-        if (el) {
-          const elementPosition = el.getBoundingClientRect().top;
-          const offsetPosition = elementPosition + window.pageYOffset - offset;
-
-          window.scrollTo({
-            top: offsetPosition,
-            behavior: "smooth"
-          });
-        }
-      }, 100);
-    }
-  };
+  const handleScroll = useScrollToSection(100);
 
   return (
     <footer className="bg-[#001d3d] text-white pt-10 pb-0 overflow-hidden relative">
@@ -132,16 +104,31 @@ const PublicFooter: React.FC<Props> = ({ empresa }) => {
             <h4 className="text-[9px] font-black uppercase tracking-[0.2em] text-blue-400 mb-6">Atendimento</h4>
             <div className="space-y-4">
               <div className="space-y-0.5">
-                <p className="text-[7px] font-bold text-blue-100/40 uppercase tracking-widest">Comercial</p>
+                <p className="text-[8px] font-bold text-blue-100/40 uppercase tracking-widest">Comercial</p>
                 <p className="text-lg font-black text-white tracking-tight leading-none">{empresa?.telefone || '(79) 3214-4114'}</p>
               </div>
               <div className="space-y-0.5">
-                <p className="text-[7px] font-bold text-blue-100/40 uppercase tracking-widest">E-mail</p>
+                <p className="text-[8px] font-bold text-blue-100/40 uppercase tracking-widest">E-mail</p>
                 <p className="text-[10px] font-medium text-blue-100/80 lowercase tracking-wide">{empresa?.email || 'contato@hidrocarveiculos.com.br'}</p>
               </div>
               <div className="pt-1 flex items-center space-x-1.5">
-                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
-                <span className="text-[7px] font-black uppercase tracking-widest text-emerald-400">Loja Aberta Agora</span>
+                {(() => {
+                  const now = new Date();
+                  const hour = now.getHours();
+                  const day = now.getDay(); // 0=dom, 6=sab
+                  const isOpen = day >= 1 && day <= 5 ? (hour >= 8 && hour < 18) : day === 6 ? (hour >= 8 && hour < 13) : false;
+                  return isOpen ? (
+                    <>
+                      <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
+                      <span className="text-[8px] font-black uppercase tracking-widest text-emerald-400">Loja Aberta Agora</span>
+                    </>
+                  ) : (
+                    <>
+                      <div className="w-1.5 h-1.5 rounded-full bg-red-500"></div>
+                      <span className="text-[8px] font-black uppercase tracking-widest text-red-400">Fechado no Momento</span>
+                    </>
+                  );
+                })()}
               </div>
             </div>
           </div>
@@ -155,7 +142,7 @@ const PublicFooter: React.FC<Props> = ({ empresa }) => {
           {/* Copyright e CNPJ à Esquerda */}
           <div className="text-center md:text-left space-y-0.5">
             <p className="text-white text-[10px] font-bold uppercase tracking-[0.15em]">
-              @2026 Hidrocar Veículos
+              @{new Date().getFullYear()} Hidrocar Veículos
             </p>
             <div className="flex flex-col sm:flex-row sm:items-center sm:gap-2">
               <p className="text-slate-500 text-[8px] font-medium uppercase tracking-[0.2em]">

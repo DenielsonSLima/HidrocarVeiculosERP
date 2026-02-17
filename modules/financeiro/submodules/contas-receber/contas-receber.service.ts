@@ -15,8 +15,7 @@ export const ContasReceberService = {
       .select(`
         *,
         parceiro:parceiros(nome, documento),
-        categoria:fin_categorias(nome),
-        pedido_venda:venda_pedidos(id, numero_venda)
+        categoria:fin_categorias(nome)
       `, { count: 'exact' })
       .eq('tipo', 'RECEBER');
 
@@ -28,7 +27,7 @@ export const ContasReceberService = {
       const ultimoDia = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0];
       query = query.gte('data_vencimento', primeiroDia).lte('data_vencimento', ultimoDia);
     } else if (tab === 'ATRASADOS') {
-      query = query.lt('data_vencimento', hoje).neq('status', 'PAGO');
+      query = query.lt('data_vencimento', hoje).neq('status', 'PAGO').neq('status', 'CANCELADO');
     }
 
     if (filtros.busca) {

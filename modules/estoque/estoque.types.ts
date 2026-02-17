@@ -53,6 +53,7 @@ export interface IVeiculo {
   valor_venda: number;
   valor_promocional?: number;
   status: 'DISPONIVEL' | 'RESERVADO' | 'VENDIDO' | 'PREPARACAO';
+  pedido_id?: string; // ID do pedido de compra de origem
   publicado_site: boolean; // Controle de visibilidade externa
   fotos: IVeiculoFoto[];
   socios: IVeiculoSocio[];

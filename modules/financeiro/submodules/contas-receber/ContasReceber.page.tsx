@@ -41,9 +41,18 @@ const ContasReceberPage: React.FC = () => {
     return () => { sub.unsubscribe(); };
   }, [activeTab, filtros, currentPage]);
 
-  // Reset pagination on filter change
+  // Reset pagination on filter/tab change (use functional ref to avoid double-load)
+  const prevTabRef = React.useRef(activeTab);
+  const prevFiltrosRef = React.useRef(filtros);
   useEffect(() => {
-    setCurrentPage(1);
+    if (prevTabRef.current !== activeTab || prevFiltrosRef.current !== filtros) {
+      prevTabRef.current = activeTab;
+      prevFiltrosRef.current = filtros;
+      if (currentPage !== 1) {
+        setCurrentPage(1);
+        return;
+      }
+    }
   }, [activeTab, filtros]);
 
   async function loadData(silent = false) {

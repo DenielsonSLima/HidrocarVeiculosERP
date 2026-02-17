@@ -5,6 +5,9 @@ import react from '@vitejs/plugin-react';
 export default defineConfig(({ mode }) => {
     const env = loadEnv(mode, '.', '');
     return {
+      // appType 'spa' (padrão) garante que o Vite redireciona todas as rotas para index.html
+      // Necessário para BrowserRouter funcionar corretamente no dev server
+      appType: 'spa',
       server: {
         port: 3000,
         host: '0.0.0.0',

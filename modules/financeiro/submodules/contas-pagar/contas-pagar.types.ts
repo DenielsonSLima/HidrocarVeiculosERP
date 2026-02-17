@@ -29,8 +29,4 @@ export interface ITituloPagar extends Omit<ITitulo, 'parceiro' | 'categoria'> {
   categoria?: {
     nome: string;
   };
-  pedido_compra?: {
-    id: string;
-    numero_pedido: string;
-  };
 }

@@ -148,16 +148,25 @@ export const EstoqueService = {
             const publicUrl = await StorageService.uploadImage(file, 'veiculos');
             return { ...photo, url: publicUrl };
           } catch (err) {
-            console.error('Erro ao fazer upload de foto de veículo:', err);
-            // Em caso de erro, mantém o objeto original (fallback) para não perder a referência, 
-            // mas idealmente deveria ter uma estratégia de retry ou notificação.
-            return photo;
+            console.error('Erro crítico ao fazer upload de foto de veículo para o Storage:', err);
+            // Retorna null para sinalizar falha no upload e não persistir Base64 no banco
+            return null;
           }
         }
         return photo;
       });
 
-      dataToSave.fotos = await Promise.all(uploadPromises);
+      const processedPhotos = await Promise.all(uploadPromises);
+
+      // Filtra fotos que falharam no upload (null)
+      dataToSave.fotos = processedPhotos.filter(p => p !== null);
+
+      // Se o usuário enviou fotos novas (Base64) e todas falharam, talvez seja melhor interromper
+      // para evitar que ele ache que salvou as fotos quando na verdade não salvou nada.
+      const sentBase64 = payload.fotos?.some((p: any) => p.url?.startsWith('data:'));
+      if (sentBase64 && dataToSave.fotos.length === 0 && payload.fotos!.length > 0) {
+        throw new Error('Falha ao processar e fazer upload das imagens para o servidor de arquivos. O registro não foi salvo.');
+      }
     }
 
     let query;

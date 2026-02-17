@@ -90,8 +90,11 @@ const EstoqueFormPage: React.FC = () => {
       // O service agora cuida da limpeza dos campos modelo/montadora etc.
       const saved = await EstoqueService.save(formData);
 
-      if (pedidoId) {
-        navigate(`/pedidos-compra/${pedidoId}`);
+      const targetPedidoId = pedidoId || formData.pedido_id;
+      if (location.pathname.includes('/pedidos-compra/')) {
+        navigate(`/pedidos-compra/${targetPedidoId}`);
+      } else if (location.pathname.includes('/pedidos-venda/')) {
+        navigate(`/pedidos-venda/${targetPedidoId}`);
       } else {
         navigate('/estoque');
       }
@@ -115,8 +118,8 @@ const EstoqueFormPage: React.FC = () => {
 
       {toast && (
         <div className={`fixed top-6 right-6 z-[250] px-6 py-4 rounded-2xl shadow-2xl flex items-center space-x-3 animate-in slide-in-from-right duration-300 border backdrop-blur-md ${toast.type === 'success' ? 'bg-slate-900/95 text-white border-emerald-500/50' :
-            toast.type === 'warning' ? 'bg-amber-100 text-amber-800 border-amber-300' :
-              'bg-rose-600 text-white border-rose-400/50'
+          toast.type === 'warning' ? 'bg-amber-100 text-amber-800 border-amber-300' :
+            'bg-rose-600 text-white border-rose-400/50'
           }`}>
           <span className="font-bold text-sm tracking-tight">{toast.message}</span>
         </div>

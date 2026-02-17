@@ -27,11 +27,13 @@ const PedidoVendaDetalhesPage: React.FC = () => {
 
   const [showConfirm, setShowConfirm] = useState(false);
   const [showDelete, setShowDelete] = useState(false);
+  const [unlinkVehicleId, setUnlinkVehicleId] = useState<string | null>(null);
   const [toast, setToast] = useState<{ type: 'success' | 'error', message: string } | null>(null);
 
   useEffect(() => {
     loadData();
-    EstoqueService.getAll().then(data => setVeiculosDisponiveis((data.data || []).filter((v: any) => v.status === 'DISPONIVEL')));
+    EstoqueService.getAll({ page: 1, limit: 200, statusTab: 'DISPONIVEL' })
+      .then(data => setVeiculosDisponiveis(data.data || []));
     const sub = PedidosVendaService.subscribe(() => loadData(true));
     return () => { sub.unsubscribe(); };
   }, [id]);
@@ -41,6 +43,11 @@ const PedidoVendaDetalhesPage: React.FC = () => {
     if (!silent) setLoading(true);
     try {
       const data = await PedidosVendaService.getById(id);
+      if (!data) {
+        showNotification('error', 'Pedido não encontrado.');
+        navigate('/pedidos-venda');
+        return;
+      }
       setPedido(data);
 
       // Se o veículo for consignado e o pedido ainda for rascunho sem forma de pagamento, sugere consignação
@@ -57,26 +64,28 @@ const PedidoVendaDetalhesPage: React.FC = () => {
           }
         }
       }
-    } catch (error) {
-      console.error(error);
-      navigate('/pedidos-venda');
+    } catch (error: any) {
+      console.error('Falha ao carregar pedido de venda:', error);
+      showNotification('error', 'Erro ao carregar dados do pedido: ' + (error.message || 'Erro desconhecido'));
+      if (!silent) {
+        if (id !== 'novo') {
+          setTimeout(() => navigate('/pedidos-venda'), 3000);
+        }
+      }
     } finally {
       if (!silent) setLoading(false);
     }
   }
 
   // CÁLCULOS FINANCEIROS DE VALIDAÇÃO
-  const totalPagamentosLancados = (pedido?.pagamentos || []).reduce((acc, p) => acc + p.valor, 0);
   const valorVenda = pedido?.valor_venda || 0;
+  const veiculoEfetivo: any = (pedido as any)?.veiculo || ((pedido as any)?.veiculos?.[0] ?? null);
+  const hasVeiculoVinculado = !!pedido?.veiculo_id || !!veiculoEfetivo?.id;
+  const valorVendaEfetivo = valorVenda > 0 ? valorVenda : (veiculoEfetivo?.valor_venda || 0);
 
-  const isConsignacaoOrigin = pedido?.veiculo?.pedido_compra?.forma_pagamento?.nome?.toLowerCase().includes('consignação') ||
-    pedido?.veiculo?.pedido_compra?.forma_pagamento?.nome?.toLowerCase().includes('consignacao');
-
-  const isConsignacaoVenda = pedido?.forma_pagamento?.nome?.toLowerCase().includes('consignação') ||
-    pedido?.forma_pagamento?.nome?.toLowerCase().includes('consignacao');
-
-  // Permitir confirmar apenas se houver veículo E o pagamento bater com o valor de venda (ou se for consignação)
-  const isFinanceiroOK = !!pedido?.veiculo_id && valorVenda > 0 && (isConsignacaoVenda || Math.abs(valorVenda - totalPagamentosLancados) < 0.05);
+  // Permitir confirmar se houver dados mínimos para faturamento
+  // A composição de recebimentos pode ser estruturada no fluxo de confirmação.
+  const isFinanceiroOK = hasVeiculoVinculado && valorVendaEfetivo > 0 && !!pedido?.forma_pagamento_id;
 
   const showNotification = (type: 'success' | 'error', message: string) => {
     setToast({ type, message });
@@ -87,7 +96,12 @@ const PedidoVendaDetalhesPage: React.FC = () => {
     if (!pedido) return;
     setActionLoading(true);
     try {
-      await PedidosVendaService.save({ id: pedido.id, veiculo_id: vId });
+      const veiculoSelecionado = (veiculosDisponiveis as any[]).find(v => v.id === vId);
+      const updates: any = { id: pedido.id, veiculo_id: vId };
+      if ((pedido.valor_venda || 0) <= 0 && veiculoSelecionado?.valor_venda) {
+        updates.valor_venda = veiculoSelecionado.valor_venda;
+      }
+      await PedidosVendaService.save(updates);
       loadData(true);
     } finally {
       setActionLoading(false);
@@ -96,10 +110,15 @@ const PedidoVendaDetalhesPage: React.FC = () => {
 
   const handleUnlinkVehicle = async (vId: string) => {
     if (!pedido) return;
-    if (!confirm("Remover este veículo da venda?")) return;
+    setUnlinkVehicleId(vId);
+  };
+
+  const confirmUnlinkVehicle = async () => {
+    if (!pedido || !unlinkVehicleId) return;
     setActionLoading(true);
     try {
       await PedidosVendaService.save({ id: pedido.id, veiculo_id: null } as any);
+      setUnlinkVehicleId(null);
       loadData(true);
     } finally {
       setActionLoading(false);
@@ -138,17 +157,49 @@ const PedidoVendaDetalhesPage: React.FC = () => {
   const handleConfirmSale = async (params: { condicao: any, contaId?: string }) => {
     if (!pedido) return;
     if (!isFinanceiroOK) {
-      showNotification('error', 'A composição de recebimentos deve ser igual ao valor da venda.');
+      showNotification('error', 'Para faturar, informe veículo, valor de venda e forma de recebimento.');
       return;
     }
     setActionLoading(true);
     try {
+      const veiculoIdEfetivo = pedido.veiculo_id || veiculoEfetivo?.id;
+
+      // SEMPRE incluir veiculo_id e valor_venda atualizados para garantir
+      // que o confirmSale receberá os dados corretos para baixar o veículo
+      const pedidoParaFaturar = { ...pedido, valor_venda: valorVendaEfetivo, veiculo_id: veiculoIdEfetivo };
+
+      if (((pedido.valor_venda || 0) !== valorVendaEfetivo && valorVendaEfetivo > 0) || (!pedido.veiculo_id && veiculoIdEfetivo)) {
+        await PedidosVendaService.save({ id: pedido.id, valor_venda: valorVendaEfetivo, veiculo_id: veiculoIdEfetivo });
+      }
+
       await PedidosVendaService.confirmSale({
-        pedido,
+        pedido: pedidoParaFaturar,
         condicao: params.condicao,
         contaBancariaId: params.contaId
       });
-      showNotification('success', 'Venda faturada! Veículo marcado como vendido.');
+
+      // Feedback Detalhado sobre o Financeiro
+      const hoje = new Date();
+      const mesAtual = hoje.getMonth();
+      const anoAtual = hoje.getFullYear();
+
+      // Busca os títulos criados para verificar datas
+      const { data: titulos } = await supabase
+        .from('fin_titulos')
+        .select('data_vencimento')
+        .eq('pedido_id', pedido.id);
+
+      const temVencimentoForaDoMes = titulos?.some(t => {
+        const d = new Date(t.data_vencimento);
+        return d.getMonth() !== mesAtual || d.getFullYear() !== anoAtual;
+      });
+
+      if (temVencimentoForaDoMes) {
+        showNotification('success', 'Venda faturada! Financeiro gerado. Verifique a aba "Outros Meses" ou "Futuros" no Contas a Receber.');
+      } else {
+        showNotification('success', 'Venda faturada! Lançamento financeiro gerado com sucesso.');
+      }
+
       setShowConfirm(false);
       loadData(true);
     } catch (e: any) {
@@ -213,6 +264,7 @@ const PedidoVendaDetalhesPage: React.FC = () => {
       <section>
         <FinancialCard
           pedido={pedido}
+          valorVendaEfetivo={valorVendaEfetivo}
           onAddPayments={handleAddPayments}
           onDeletePayment={handleDeletePayment}
           isSaving={actionLoading}
@@ -233,6 +285,7 @@ const PedidoVendaDetalhesPage: React.FC = () => {
       {showConfirm && (
         <ModalConfirmacaoVenda
           pedido={pedido}
+          valorVendaEfetivo={valorVendaEfetivo}
           onClose={() => setShowConfirm(false)}
           onConfirm={handleConfirmSale}
           isLoading={actionLoading}
@@ -248,6 +301,18 @@ const PedidoVendaDetalhesPage: React.FC = () => {
         }}
         title="Excluir Pedido de Venda?"
         message="Esta ação apagará o rascunho. Veículos vinculados voltarão a ficar disponíveis no estoque."
+        isLoading={actionLoading}
+      />
+
+      <ConfirmModal
+        isOpen={!!unlinkVehicleId}
+        onClose={() => setUnlinkVehicleId(null)}
+        onConfirm={confirmUnlinkVehicle}
+        title="Remover Veículo do Pedido?"
+        message="O veículo será desvinculado desta venda e voltará para a lista de disponíveis."
+        confirmText="Remover"
+        cancelText="Cancelar"
+        variant="info"
         isLoading={actionLoading}
       />
     </div>

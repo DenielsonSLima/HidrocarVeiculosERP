@@ -4,29 +4,67 @@ import RelatoriosQuickPreview from '../components/RelatoriosQuickPreview';
 import EstoqueTemplate from '../templates/estoque/EstoqueTemplate';
 import { EmpresaService } from '../../ajustes/empresa/empresa.service';
 import { MarcaDaguaService } from '../../ajustes/marca-dagua/marca-dagua.service';
+import { supabase } from '../../../lib/supabase';
 
 const RelatorioEstoquePage: React.FC = () => {
   const navigate = useNavigate();
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [empresa, setEmpresa] = useState<any>(null);
   const [watermark, setWatermark] = useState<any>(null);
-
-  // Mock de dados para o relatório de estoque
-  const reportData = {
-    totalUnidades: 15,
-    valorTotalCusto: 1850000.00,
-    valorTotalVenda: 2120000.00,
-    items: [
-      { placa: 'ABC1D23', modelo: 'Toyota Corolla', versao: 'XEI 2.0', ano: '2023/2024', cor: 'BRANCO', custo: 125000, venda: 145000 },
-      { placa: 'XYZ9K87', modelo: 'Honda Civic', versao: 'Touring', ano: '2022/2022', cor: 'PRETO', custo: 135000, venda: 158000 },
-      { placa: 'BRA4F56', modelo: 'Jeep Compass', versao: 'S-Series', ano: '2024/2024', cor: 'CINZA', custo: 210000, venda: 235000 },
-    ]
-  };
+  const [loading, setLoading] = useState(false);
+  const [reportData, setReportData] = useState<any>(null);
+  const [statusFiltro, setStatusFiltro] = useState('DISPONIVEL');
 
   useEffect(() => {
     EmpresaService.getDadosEmpresa().then(setEmpresa);
     MarcaDaguaService.getConfig().then(setWatermark);
   }, []);
+
+  const handleGerar = async () => {
+    setLoading(true);
+    try {
+      let query = supabase.from('est_veiculos').select(`
+        id, placa, ano_fabricacao, ano_modelo, cor, valor_custo, valor_custo_servicos, valor_venda, status,
+        montadora:cad_montadoras(nome),
+        modelo:cad_modelos(nome),
+        versao:cad_versoes(nome)
+      `);
+
+      if (statusFiltro === 'DISPONIVEL') {
+        query = query.eq('status', 'DISPONIVEL');
+      }
+      // Se 'TODOS', não aplica filtro de status
+
+      const { data: veiculos, error } = await query.order('created_at', { ascending: false });
+      if (error) throw error;
+
+      const items = (veiculos || []).map((v: any) => ({
+        placa: v.placa || '—',
+        modelo: v.montadora?.nome || 'N/I',
+        versao: `${v.modelo?.nome || ''} ${v.versao?.nome || ''}`.trim() || '—',
+        ano: `${v.ano_fabricacao || '—'}/${v.ano_modelo || '—'}`,
+        cor: v.cor || '—',
+        custo: (v.valor_custo || 0) + (v.valor_custo_servicos || 0),
+        venda: v.valor_venda || 0
+      }));
+
+      const totalUnidades = items.length;
+      const valorTotalCusto = items.reduce((a: number, i: any) => a + i.custo, 0);
+      const valorTotalVenda = items.reduce((a: number, i: any) => a + i.venda, 0);
+
+      setReportData({
+        totalUnidades,
+        valorTotalCusto,
+        valorTotalVenda,
+        items
+      });
+      setIsPreviewOpen(true);
+    } catch (err) {
+      console.error('Erro ao gerar relatório de estoque:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="space-y-8 pb-20 animate-in fade-in duration-500">
@@ -49,7 +87,7 @@ const RelatorioEstoquePage: React.FC = () => {
          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-12 items-end">
             <div>
                <label className="block text-[10px] font-black text-slate-400 uppercase mb-2 tracking-widest ml-1">Status</label>
-               <select className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3 text-sm font-bold focus:ring-2 focus:ring-blue-500 outline-none appearance-none cursor-pointer">
+               <select value={statusFiltro} onChange={e => setStatusFiltro(e.target.value)} className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3 text-sm font-bold focus:ring-2 focus:ring-blue-500 outline-none appearance-none cursor-pointer">
                   <option value="DISPONIVEL">Apenas Disponíveis</option>
                   <option value="TODOS">Todos os Veículos</option>
                </select>
@@ -61,11 +99,18 @@ const RelatorioEstoquePage: React.FC = () => {
                </select>
             </div>
             <button 
-              onClick={() => setIsPreviewOpen(true)}
-              className="px-6 py-3.5 bg-blue-600 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-xl shadow-blue-100 hover:bg-blue-700 transition-all flex items-center justify-center space-x-2"
+              onClick={handleGerar}
+              disabled={loading}
+              className="px-6 py-3.5 bg-blue-600 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-xl shadow-blue-100 hover:bg-blue-700 transition-all flex items-center justify-center space-x-2 disabled:opacity-50"
             >
-               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>
-               <span>Gerar Inventário</span>
+               {loading ? (
+                 <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+               ) : (
+                 <>
+                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>
+                   <span>Gerar Inventário</span>
+                 </>
+               )}
             </button>
          </div>
 
@@ -78,17 +123,19 @@ const RelatorioEstoquePage: React.FC = () => {
       </div>
 
       {/* QUICK PREVIEW MODAL */}
-      <RelatoriosQuickPreview 
-        isOpen={isPreviewOpen} 
-        onClose={() => setIsPreviewOpen(false)} 
-        title="Pré-visualização do Inventário"
-      >
-        <EstoqueTemplate 
-          empresa={empresa} 
-          watermark={watermark} 
-          data={reportData} 
-        />
-      </RelatoriosQuickPreview>
+      {reportData && (
+        <RelatoriosQuickPreview 
+          isOpen={isPreviewOpen} 
+          onClose={() => setIsPreviewOpen(false)} 
+          title="Pré-visualização do Inventário"
+        >
+          <EstoqueTemplate 
+            empresa={empresa} 
+            watermark={watermark} 
+            data={reportData} 
+          />
+        </RelatoriosQuickPreview>
+      )}
     </div>
   );
 };

@@ -19,6 +19,7 @@ export const PedidosCompraService = {
         corretor:cad_corretores(nome, sobrenome),
         veiculos:est_veiculos!est_veiculos_pedido_id_fkey(
           id,
+          status,
           valor_custo,
           placa,
           fotos,
@@ -45,11 +46,26 @@ export const PedidosCompraService = {
 
     if (error) throw error;
 
+    let resultado = (data || []) as IPedidoCompra[];
+    let totalCount = count || 0;
+
+    // Para EFETIVADOS: excluir pedidos cujos TODOS veículos já foram vendidos
+    // Esses pedidos já não representam estoque ativo
+    if (aba === 'EFETIVADOS') {
+      const antes = resultado.length;
+      resultado = resultado.filter(p => {
+        if (!p.veiculos || p.veiculos.length === 0) return true;
+        // Manter se pelo menos 1 veículo NÃO está vendido
+        return p.veiculos.some((v: any) => v.status !== 'VENDIDO');
+      });
+      totalCount = Math.max(0, totalCount - (antes - resultado.length));
+    }
+
     return {
-      data: (data || []) as IPedidoCompra[],
-      count: count || 0,
+      data: resultado,
+      count: totalCount,
       currentPage: page,
-      totalPages: Math.ceil((count || 0) / limit)
+      totalPages: Math.ceil(totalCount / limit)
     };
   },
 
@@ -62,7 +78,8 @@ export const PedidosCompraService = {
         valor_negociado,
         status,
         veiculos:est_veiculos!est_veiculos_pedido_id_fkey(
-          valor_custo
+          valor_custo,
+          status
         )
       `);
 
@@ -80,7 +97,18 @@ export const PedidosCompraService = {
       console.error('Erro ao buscar stats:', error);
       return [];
     }
-    return data as any;
+
+    let resultado = data as any[];
+
+    // Para EFETIVADOS: excluir pedidos cujos TODOS veículos já foram vendidos
+    if (aba === 'EFETIVADOS') {
+      resultado = resultado.filter((p: any) => {
+        if (!p.veiculos || p.veiculos.length === 0) return true;
+        return p.veiculos.some((v: any) => v.status !== 'VENDIDO');
+      });
+    }
+
+    return resultado;
   },
 
   async getById(id: string): Promise<IPedidoCompra | null> {
@@ -144,13 +172,13 @@ export const PedidosCompraService = {
     pedido: IPedidoCompra,
     condicao: any,
     contaBancariaId?: string
-  }): Promise<void> {
+  }): Promise<any> {
     const { pedido, condicao, contaBancariaId } = params;
 
     const isConsignacao = pedido.forma_pagamento?.nome?.toLowerCase().includes('consignação') ||
       pedido.forma_pagamento?.nome?.toLowerCase().includes('consignacao');
 
-    await FinanceiroAutomationService.processarFinanceiroPedido({
+    const titulos = await FinanceiroAutomationService.processarFinanceiroPedido({
       tipo: isConsignacao ? 'RECEBER' : 'PAGAR',
       pedidoId: pedido.id,
       parceiroId: pedido.fornecedor_id!,
@@ -179,6 +207,8 @@ export const PedidosCompraService = {
         })
         .in('id', vIds);
     }
+
+    return titulos;
   },
 
   async reopenOrder(id: string): Promise<void> {
@@ -197,6 +227,87 @@ export const PedidosCompraService = {
   },
 
   async delete(id: string): Promise<void> {
+    // 1. Buscar veículos vinculados ao pedido
+    const { data: veiculos } = await supabase
+      .from('est_veiculos')
+      .select('id')
+      .eq('pedido_id', id);
+
+    if (veiculos && veiculos.length > 0) {
+      const veiculoIds = veiculos.map(v => v.id);
+
+      // 2. Buscar despesas dos veículos vinculados
+      const { data: despesas } = await supabase
+        .from('est_veiculos_despesas')
+        .select('id')
+        .in('veiculo_id', veiculoIds);
+
+      if (despesas && despesas.length > 0) {
+        const despesaIds = despesas.map(d => d.id);
+
+        // 3. Buscar títulos financeiros vinculados às despesas
+        const { data: titulos } = await supabase
+          .from('fin_titulos')
+          .select('id')
+          .in('despesa_veiculo_id', despesaIds);
+
+        if (titulos && titulos.length > 0) {
+          const tituloIds = titulos.map(t => t.id);
+
+          // 4. Remover transações financeiras dos títulos
+          await supabase
+            .from('fin_transacoes')
+            .delete()
+            .in('titulo_id', tituloIds);
+
+          // 5. Remover títulos financeiros das despesas
+          await supabase
+            .from('fin_titulos')
+            .delete()
+            .in('despesa_veiculo_id', despesaIds);
+        }
+
+        // 6. Remover despesas dos veículos
+        await supabase
+          .from('est_veiculos_despesas')
+          .delete()
+          .in('veiculo_id', veiculoIds);
+      }
+
+      // 7. Remover também títulos financeiros ligados diretamente ao pedido (gerados na confirmação)
+      const { data: titulosPedido } = await supabase
+        .from('fin_titulos')
+        .select('id')
+        .eq('pedido_id', id);
+
+      if (titulosPedido && titulosPedido.length > 0) {
+        const titulosPedidoIds = titulosPedido.map(t => t.id);
+
+        await supabase
+          .from('fin_transacoes')
+          .delete()
+          .in('titulo_id', titulosPedidoIds);
+
+        await supabase
+          .from('fin_titulos')
+          .delete()
+          .eq('pedido_id', id);
+      }
+
+      // 8. Remover os veículos do estoque
+      await supabase
+        .from('est_veiculos')
+        .delete()
+        .in('id', veiculoIds);
+    }
+
+    // 9. Remover pagamentos do pedido
+    await supabase
+      .from('cmp_pedidos_pagamentos')
+      .delete()
+      .eq('pedido_id', id);
+
+    // 10. Remover o pedido
     const { error } = await supabase.from(TABLE).delete().eq('id', id);
     if (error) throw error;
   },

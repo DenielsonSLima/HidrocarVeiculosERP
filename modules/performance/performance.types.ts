@@ -1,70 +1,121 @@
-export type PerformanceTab =
-  | 'STRATEGIC'
-  | 'FINANCIAL'
-  | 'INVENTORY'
-  | 'PURCHASING'
-  | 'SALES'
-  | 'OPERATIONAL';
+// =============================================
+// MÓDULO PERFORMANCE - TIPOS
+// 2 Abas: Mês Atual / Outros Meses
+// Visão completa da empresa por período
+// =============================================
 
-export interface IStrategicKpis {
-  lucro_liquido_mensal: number;
-  margem_media_loja: number;
-  roi_estoque: number;
-  ponto_equilibrio: number;
-  capital_imobilizado: number;
-  crescimento_mensal: number;
-  previsao_caixa_30d: number;
+export type PerformanceTab = 'MES_ATUAL' | 'OUTROS_MESES';
+
+// ---- KPIs Resumo do Período ----
+export interface IPerformanceResumo {
+  total_vendas_valor: number;
+  total_vendas_qtd: number;
+  total_compras_valor: number;
+  total_compras_qtd: number;
+  lucro_bruto: number;
+  margem_media: number;
+  ticket_medio_venda: number;
+  despesas_veiculos: number;
+  retiradas_socios: number;
+  contas_pagar_pendente: number;
+  contas_receber_pendente: number;
+  contas_pagar_pago: number;
+  contas_receber_pago: number;
+  saldo_contas_bancarias: number;
+  total_entradas: number;
+  total_saidas: number;
 }
 
-export interface IVehiclePerformance {
+// ---- Venda do Período ----
+export interface IPerformanceVenda {
+  id: string;
+  numero_venda: string;
+  data_venda: string;
+  cliente_nome: string;
+  veiculo_modelo: string;
+  veiculo_placa: string;
+  valor_venda: number;
+  custo_veiculo: number;
+  custo_servicos: number;
+  lucro_bruto: number;
+  margem_percent: number;
+}
+
+// ---- Compra do Período ----
+export interface IPerformanceCompra {
+  id: string;
+  numero_pedido: string;
+  data_compra: string;
+  fornecedor_nome: string;
+  veiculo_modelo: string;
+  veiculo_placa: string;
+  valor_negociado: number;
+}
+
+// ---- Título Financeiro ----
+export interface IPerformanceTitulo {
+  id: string;
+  tipo: 'PAGAR' | 'RECEBER';
+  descricao: string;
+  valor_total: number;
+  valor_pago: number;
+  data_vencimento: string;
+  status: string;
+  parceiro_nome: string;
+  categoria_nome: string;
+}
+
+// ---- Despesa de Veículo ----
+export interface IPerformanceDespesaVeiculo {
+  id: string;
+  veiculo_modelo: string;
+  veiculo_placa: string;
+  descricao: string;
+  valor_total: number;
+  data: string;
+  status_pagamento: string;
+}
+
+// ---- Retirada de Sócio ----
+export interface IPerformanceRetirada {
+  id: string;
+  socio_nome: string;
+  valor: number;
+  data: string;
+  tipo: string;
+  descricao: string;
+}
+
+// ---- Veículo em Estoque (snapshot) ----
+export interface IPerformanceEstoque {
   id: string;
   modelo: string;
   placa: string;
-  custo_aquisicao: number;
-  custo_total: number;
-  preco_venda: number;
-  lucro_bruto: number;
-  lucro_liquido: number;
+  valor_custo: number;
+  valor_custo_servicos: number;
+  valor_venda: number;
   margem_percent: number;
   dias_estoque: number;
-  custo_capital_parado: number;
+  status: string;
 }
 
-export interface IInventoryAnalytics {
-  giro_estoque: number;
-  tempo_medio_venda: number;
-  encalhados_30: number;
-  encalhados_60: number;
-  encalhados_90: number;
-  custo_diario_parado: number;
-}
-
-export interface ISalesPerformance {
-  vendedor_nome: string;
-  qtd_vendida: number;
-  ticket_medio: number;
-  margem_media: number;
-  taxa_desconto: number;
-  comissao_paga: number;
-  lucro_liquido_gerado: number;
-}
-
-export interface IIntelligentAlert {
+// ---- Conta Bancária (saldo) ----
+export interface IPerformanceConta {
   id: string;
-  nivel: 'CRITICO' | 'ATENCAO' | 'INFO';
-  titulo: string;
-  mensagem: string;
-  veiculo_id?: string;
+  banco_nome: string;
+  tipo: string;
+  saldo_atual: number;
 }
 
-export interface IPurchasingPerformance {
-  label: string;
-  roi: number;
-  color: string;
-}
-
-export interface IOperationalPerformance {
-  tempo_compra_venda: number;
-  tempo_preparacao: number;
-  custo_medio_reforma: number;
+// ---- Dados completos do período ----
+export interface IPerformanceData {
+  resumo: IPerformanceResumo;
+  vendas: IPerformanceVenda[];
+  compras: IPerformanceCompra[];
+  titulos_pagar: IPerformanceTitulo[];
+  titulos_receber: IPerformanceTitulo[];
+  despesas_veiculos: IPerformanceDespesaVeiculo[];
+  retiradas: IPerformanceRetirada[];
+  estoque: IPerformanceEstoque[];
+  contas_bancarias: IPerformanceConta[];
 }

@@ -1,28 +1,36 @@
 import React from 'react';
-import { IExtratoTotals } from '../../../financeiro.types';
+import { IHistoricoTotals } from '../../../financeiro.types';
 
 interface Props {
-  totals: IExtratoTotals;
+  totals: IHistoricoTotals;
 }
 
 const ExtratoKpis: React.FC<Props> = ({ totals }) => {
   const formatCurrency = (val: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
 
-  const { entradas, saidas, balanco } = totals;
+  const { entradas_realizadas, saidas_realizadas, a_pagar_pendente, a_receber_pendente, saldo_periodo } = totals;
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-in fade-in duration-700">
-      <div className="bg-emerald-50 border border-emerald-100 p-6 rounded-[2rem] shadow-sm">
-        <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest mb-1">Total Entradas</p>
-        <h3 className="text-2xl font-black text-emerald-700">{formatCurrency(entradas)}</h3>
+    <div className="grid grid-cols-1 md:grid-cols-5 gap-4 animate-in fade-in duration-700">
+      <div className="bg-emerald-50 border border-emerald-100 p-5 rounded-[2rem] shadow-sm">
+        <p className="text-[9px] font-black text-emerald-600 uppercase tracking-widest mb-1">Entradas Realizadas</p>
+        <h3 className="text-xl font-black text-emerald-700">{formatCurrency(entradas_realizadas)}</h3>
       </div>
-      <div className="bg-rose-50 border border-rose-100 p-6 rounded-[2rem] shadow-sm">
-        <p className="text-[10px] font-black text-rose-600 uppercase tracking-widest mb-1">Total Saídas</p>
-        <h3 className="text-2xl font-black text-rose-700">{formatCurrency(saidas)}</h3>
+      <div className="bg-rose-50 border border-rose-100 p-5 rounded-[2rem] shadow-sm">
+        <p className="text-[9px] font-black text-rose-600 uppercase tracking-widest mb-1">Saídas Realizadas</p>
+        <h3 className="text-xl font-black text-rose-700">{formatCurrency(saidas_realizadas)}</h3>
       </div>
-      <div className={`p-6 rounded-[2rem] border shadow-sm ${balanco >= 0 ? 'bg-indigo-50 border-indigo-100' : 'bg-amber-50 border-amber-100'}`}>
-        <p className={`text-[10px] font-black uppercase tracking-widest mb-1 ${balanco >= 0 ? 'text-indigo-600' : 'text-amber-600'}`}>Saldo Período</p>
-        <h3 className={`text-2xl font-black ${balanco >= 0 ? 'text-indigo-700' : 'text-amber-700'}`}>{formatCurrency(balanco)}</h3>
+      <div className="bg-orange-50 border border-orange-100 p-5 rounded-[2rem] shadow-sm">
+        <p className="text-[9px] font-black text-orange-600 uppercase tracking-widest mb-1">A Pagar (Pendente)</p>
+        <h3 className="text-xl font-black text-orange-700">{formatCurrency(a_pagar_pendente)}</h3>
+      </div>
+      <div className="bg-teal-50 border border-teal-100 p-5 rounded-[2rem] shadow-sm">
+        <p className="text-[9px] font-black text-teal-600 uppercase tracking-widest mb-1">A Receber (Pendente)</p>
+        <h3 className="text-xl font-black text-teal-700">{formatCurrency(a_receber_pendente)}</h3>
+      </div>
+      <div className={`p-5 rounded-[2rem] border shadow-sm ${saldo_periodo >= 0 ? 'bg-indigo-50 border-indigo-100' : 'bg-amber-50 border-amber-100'}`}>
+        <p className={`text-[9px] font-black uppercase tracking-widest mb-1 ${saldo_periodo >= 0 ? 'text-indigo-600' : 'text-amber-600'}`}>Saldo Período</p>
+        <h3 className={`text-xl font-black ${saldo_periodo >= 0 ? 'text-indigo-700' : 'text-amber-700'}`}>{formatCurrency(saldo_periodo)}</h3>
       </div>
     </div>
   );

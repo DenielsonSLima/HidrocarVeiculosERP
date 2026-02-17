@@ -145,12 +145,31 @@ const PedidoCompraDetalhesPage: React.FC = () => {
     }
     setActionLoading(true);
     try {
-      await PedidosCompraService.confirmOrder({
+      const titulos = await PedidosCompraService.confirmOrder({
         pedido: { ...pedido, valor_negociado: valorMasterPedido },
         condicao: params.condicao,
         contaBancariaId: params.contaId
       });
-      showNotification('success', 'Pedido confirmado! Veículo agora disponível no estoque.');
+
+      let successMsg = 'Pedido confirmado! Veículo agora disponível no estoque.';
+
+      // Feedback melhorado do financeiro
+      if (titulos && titulos.length > 0) {
+        const primeiroTitulo = titulos[0];
+        const vencimento = new Date(primeiroTitulo.data_vencimento);
+        const hoje = new Date();
+
+        // Formata data para DD/MM/AAAA (sem fuso horário)
+        const vencimentoStr = vencimento.toLocaleDateString('pt-BR', { timeZone: 'UTC' });
+
+        if (vencimento.getMonth() !== hoje.getMonth() || vencimento.getFullYear() !== hoje.getFullYear()) {
+          successMsg = `Pedido confirmado! Lançamento criado para ${vencimentoStr}. Verifique a aba 'Outros Meses' ou 'Futuros' no financeiro.`;
+        } else {
+          successMsg = `Pedido confirmado! Lançamento criado para ${vencimentoStr}.`;
+        }
+      }
+
+      showNotification('success', successMsg);
       setShowConfirm(false);
       loadData(true);
     } catch (e: any) {

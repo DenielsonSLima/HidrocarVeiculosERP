@@ -58,7 +58,7 @@ export const TransferenciasService = {
         valor: payload.valor,
         tipo: 'SAIDA',
         data_pagamento: payload.data,
-        tipo_transacao: 'TRANSFERENCIA',
+        tipo_transacao: 'TRANSFERENCIA_SAIDA',
         descricao: `[SAÍDA] ${payload.descricao}`
       },
       {
@@ -67,7 +67,7 @@ export const TransferenciasService = {
         valor: payload.valor,
         tipo: 'ENTRADA',
         data_pagamento: payload.data,
-        tipo_transacao: 'TRANSFERENCIA',
+        tipo_transacao: 'TRANSFERENCIA_ENTRADA',
         descricao: `[ENTRADA] ${payload.descricao}`
       }
     ]);
@@ -92,14 +92,16 @@ export const TransferenciasService = {
     // Se reverse for false: Retira da origem (-) e adiciona no destino (+)
     
     // Ajuste Origem
-    const { data: cOrigem } = await supabase.from('fin_contas_bancarias').select('saldo_atual').eq('id', origemId).single();
-    const novoSaldoOrigem = reverse ? (cOrigem.saldo_atual + valor) : (cOrigem.saldo_atual - valor);
-    await supabase.from('fin_contas_bancarias').update({ saldo_atual: novoSaldoOrigem }).eq('id', origemId);
+    const { data: cOrigem, error: errOrigem } = await supabase.from('fin_contas_bancarias').select('saldo_atual').eq('id', origemId).single();
+    if (errOrigem || !cOrigem) throw new Error('Conta de origem não encontrada para ajuste de saldo.');
+    const novoSaldoOrigem = reverse ? (Number(cOrigem.saldo_atual) + valor) : (Number(cOrigem.saldo_atual) - valor);
+    await supabase.from('fin_contas_bancarias').update({ saldo_atual: novoSaldoOrigem, updated_at: new Date().toISOString() }).eq('id', origemId);
 
     // Ajuste Destino
-    const { data: cDestino } = await supabase.from('fin_contas_bancarias').select('saldo_atual').eq('id', destinoId).single();
-    const novoSaldoDestino = reverse ? (cDestino.saldo_atual - valor) : (cDestino.saldo_atual + valor);
-    await supabase.from('fin_contas_bancarias').update({ saldo_atual: novoSaldoDestino }).eq('id', destinoId);
+    const { data: cDestino, error: errDestino } = await supabase.from('fin_contas_bancarias').select('saldo_atual').eq('id', destinoId).single();
+    if (errDestino || !cDestino) throw new Error('Conta de destino não encontrada para ajuste de saldo.');
+    const novoSaldoDestino = reverse ? (Number(cDestino.saldo_atual) - valor) : (Number(cDestino.saldo_atual) + valor);
+    await supabase.from('fin_contas_bancarias').update({ saldo_atual: novoSaldoDestino, updated_at: new Date().toISOString() }).eq('id', destinoId);
   },
 
   subscribe(onUpdate: () => void) {

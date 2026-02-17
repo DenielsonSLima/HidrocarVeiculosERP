@@ -14,11 +14,12 @@ interface Props {
   setSortBy: (v: SortOption) => void;
   groupBy: GroupOption;
   setGroupBy: (v: GroupOption) => void;
+  whatsappPhone?: string;
 }
 
 const EstoquePublicoFilters: React.FC<Props> = ({ 
   montadoras, selectedBrand, setSelectedBrand, minPrice, setMinPrice, maxPrice, setMaxPrice,
-  sortBy, setSortBy, groupBy, setGroupBy
+  sortBy, setSortBy, groupBy, setGroupBy, whatsappPhone
 }) => {
   
   const handlePriceInput = (val: string, setter: (v: number | '') => void) => {
@@ -98,7 +99,7 @@ const EstoquePublicoFilters: React.FC<Props> = ({
                 onChange={(e) => setSortBy(e.target.value as SortOption)}
                 className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 text-xs font-bold outline-none focus:ring-2 focus:ring-[#004691] appearance-none cursor-pointer"
               >
-                <option value="nome">Ordem Alfabética</option>
+                <option value="created_desc">Mais Recentes</option>
                 <option value="preco_asc">Valor: Menor para Maior</option>
                 <option value="preco_desc">Valor: Maior para Menor</option>
               </select>
@@ -119,7 +120,16 @@ const EstoquePublicoFilters: React.FC<Props> = ({
          <div className="absolute top-0 right-0 w-24 h-24 bg-white/10 rounded-full blur-2xl -mr-10 -mt-10 group-hover:scale-150 transition-transform duration-700"></div>
          <h4 className="text-sm font-black uppercase tracking-tighter relative z-10">Atendimento Premium</h4>
          <p className="text-[10px] text-blue-200 mt-2 leading-relaxed relative z-10 opacity-70">Nossos consultores estão prontos para ajudar você com as melhores condições.</p>
-         <button className="mt-6 w-full py-4 bg-white text-[#004691] rounded-2xl text-[9px] font-[900] uppercase tracking-widest shadow-lg hover:bg-blue-50 transition-all relative z-10 active:scale-95">Falar com Consultor</button>
+         <button
+           onClick={() => {
+             const phone = (whatsappPhone || '').replace(/\D/g, '');
+             const message = encodeURIComponent('Olá! Gostaria de falar com um consultor sobre os veículos disponíveis.');
+             window.open(`https://wa.me/55${phone}?text=${message}`, '_blank');
+           }}
+           className="mt-6 w-full py-4 bg-white text-[#004691] rounded-2xl text-[9px] font-[900] uppercase tracking-widest shadow-lg hover:bg-blue-50 transition-all relative z-10 active:scale-95"
+         >
+           Falar com Consultor
+         </button>
       </div>
     </div>
   );
