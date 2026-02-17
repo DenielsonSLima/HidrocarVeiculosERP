@@ -12,14 +12,15 @@ export const CaixaService = {
     // 1. Parallelize all independent database calls
     const [
       { data: contas },
-      { data: veiculosNoPatioBruto },
+      { data: veiculosNoPatio },
       { data: titulosPagar },
       { data: titulosReceber },
-      { data: vendasConcluidas },
     ] = await Promise.all([
       // Saldos Bancários
       supabase.from('fin_contas_bancarias').select('*').order('banco_nome'),
-      // Ativos (Estoque Físico)
+      // Ativos (Estoque Físico) — o status do veículo é a fonte de verdade.
+      // Veículos com status DISPONIVEL/PREPARACAO/RESERVADO estão no pátio.
+      // Ao finalizar uma venda, o status é atualizado para VENDIDO automaticamente.
       supabase.from('est_veiculos')
         .select('id, modelo, placa, valor_custo, valor_custo_servicos, socios, status, fotos')
         .in('status', ['DISPONIVEL', 'PREPARACAO', 'RESERVADO']),
@@ -35,18 +36,7 @@ export const CaixaService = {
         .eq('tipo', 'RECEBER')
         .neq('status', 'PAGO')
         .neq('status', 'CANCELADO'),
-      // Cross-check: buscar veículos que já possuem venda CONCLUÍDA
-      // para garantir que não sejam contados como ativos (safety net)
-      supabase.from('venda_pedidos')
-        .select('veiculo_id')
-        .eq('status', 'CONCLUIDO')
-        .not('veiculo_id', 'is', null),
     ]);
-
-    // Filtrar veículos: excluir qualquer veículo que tenha venda CONCLUÍDA
-    // mesmo que o status do veículo não tenha sido atualizado corretamente
-    const veiculosVendidosIds = new Set((vendasConcluidas || []).map((v: any) => v.veiculo_id));
-    const veiculosNoPatio = (veiculosNoPatioBruto || []).filter((v: any) => !veiculosVendidosIds.has(v.id));
 
     // 2. Parallelize more dependent queries that need periodo
     let queryVendas = supabase.from('venda_pedidos')

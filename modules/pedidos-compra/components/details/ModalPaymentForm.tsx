@@ -51,11 +51,28 @@ const ModalPaymentForm: React.FC<Props> = ({ pedidoId, valorSugerido, onClose, o
     loadInitial();
   }, []);
 
+  // Condição virtual "À VISTA" para formas sem condições cadastradas (ex: PIX, Dinheiro)
+  const CONDICAO_AVISTA_AUTO = {
+    id: '__auto_avista__',
+    nome: 'À VISTA (Automático)',
+    qtd_parcelas: 1,
+    dias_primeira_parcela: 0,
+    dias_entre_parcelas: 0,
+    ativo: true,
+  };
+
   useEffect(() => {
     if (formaId) {
       setLoadingCondicoes(true);
       CondicoesPagamentoService.getByFormaPagamento(formaId).then(data => {
-        setCondicoes(data.filter(c => c.ativo));
+        const ativas = data.filter(c => c.ativo);
+        if (ativas.length === 0) {
+          // Nenhuma condição cadastrada → gera opção "À VISTA" automática
+          setCondicoes([CONDICAO_AVISTA_AUTO as any]);
+          setCondicaoId(CONDICAO_AVISTA_AUTO.id);
+        } else {
+          setCondicoes(ativas);
+        }
         setLoadingCondicoes(false);
       });
     } else {
@@ -117,11 +134,14 @@ const ModalPaymentForm: React.FC<Props> = ({ pedidoId, valorSugerido, onClose, o
       return;
     }
 
+    // Se a condição é a virtual "À VISTA", não envia condicao_id ao banco
+    const isAutoAvista = condicaoId === '__auto_avista__';
+
     const payload: Partial<IPedidoPagamento>[] = parcelas.map(p => ({
       pedido_id: pedidoId,
       data_pagamento: p.data_vencimento,
       forma_pagamento_id: formaId,
-      condicao_id: condicaoId,
+      condicao_id: isAutoAvista ? undefined : condicaoId,
       conta_bancaria_id: p.data_vencimento <= new Date().toISOString().split('T')[0] ? contaBancariaId : undefined,
       valor: p.valor,
       observacao: parcelas.length > 1 ? `Parcela ${p.numero}/${parcelas.length} - ${observacao}` : observacao

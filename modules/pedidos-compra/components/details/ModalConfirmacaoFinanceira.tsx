@@ -20,16 +20,32 @@ const ModalConfirmacaoFinanceira: React.FC<Props> = ({ pedido, onClose, onConfir
 
   const formatCurrency = (val: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
 
+  // Condição virtual "À VISTA" para formas sem condições cadastradas (ex: PIX, Dinheiro)  
+  const CONDICAO_AVISTA_AUTO = {
+    id: '__auto_avista__',
+    nome: 'À VISTA (Automático)',
+    qtd_parcelas: 1,
+    dias_primeira_parcela: 0,
+    dias_entre_parcelas: 0,
+    ativo: true,
+  };
+
   useEffect(() => {
     if (pedido.forma_pagamento_id) {
       CondicoesPagamentoService.getByFormaPagamento(pedido.forma_pagamento_id).then(data => {
-        setCondicoes(data);
+        if (data.length === 0) {
+          // Nenhuma condição cadastrada → gera opção "À VISTA" automática
+          setCondicoes([CONDICAO_AVISTA_AUTO as any]);
+          setSelectedCondicaoId(CONDICAO_AVISTA_AUTO.id);
+        } else {
+          setCondicoes(data);
 
-        // Se já houver um pagamento lançado com uma condição, tenta pré-selecionar ela
-        if (pedido.pagamentos && pedido.pagamentos.length > 0) {
-          const firstPaymentWithCond = pedido.pagamentos.find(p => p.condicao_id);
-          if (firstPaymentWithCond) {
-            setSelectedCondicaoId(firstPaymentWithCond.condicao_id);
+          // Se já houver um pagamento lançado com uma condição, tenta pré-selecionar ela
+          if (pedido.pagamentos && pedido.pagamentos.length > 0) {
+            const firstPaymentWithCond = pedido.pagamentos.find(p => p.condicao_id);
+            if (firstPaymentWithCond) {
+              setSelectedCondicaoId(firstPaymentWithCond.condicao_id);
+            }
           }
         }
       });
@@ -120,7 +136,11 @@ const ModalConfirmacaoFinanceira: React.FC<Props> = ({ pedido, onClose, onConfir
             onClick={() => {
               if (!selectedCondicaoId) return alert('Selecione uma condição.');
               if (requiresAccount && !selectedContaId) return alert('Selecione a conta bancária.');
-              onConfirm({ condicao: selectedCondicao!, contaId: selectedContaId });
+              // Se for condição virtual "À VISTA", envia o objeto diretamente (sem ID fake)
+              const condicaoParaEnviar = selectedCondicaoId === '__auto_avista__'
+                ? { nome: 'À VISTA', qtd_parcelas: 1, dias_primeira_parcela: 0, dias_entre_parcelas: 0 }
+                : selectedCondicao!;
+              onConfirm({ condicao: condicaoParaEnviar, contaId: selectedContaId });
             }}
             disabled={isLoading || !selectedCondicaoId}
             className="w-full py-5 bg-indigo-600 text-white rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-indigo-700 shadow-2xl transition-all disabled:opacity-30 flex items-center justify-center"
